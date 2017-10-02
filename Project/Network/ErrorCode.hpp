@@ -24,6 +24,11 @@ namespace spi
             return !_ec;
         }
 
+        operator bool() const noexcept
+        {
+            return (bool)_ec;
+        }
+
         const InternalT &get() const noexcept
         {
             return _ec;
