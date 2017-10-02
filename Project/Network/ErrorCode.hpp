@@ -29,6 +29,11 @@ namespace spi
             return _ec;
         }
 
+        std::string message() const noexcept
+        {
+            return _ec.message();
+        }
+
     private:
         const InternalT _ec;
     };
