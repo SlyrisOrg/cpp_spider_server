@@ -5,6 +5,7 @@
 #ifndef SPIDER_SERVER_COMMANDHANDLER_HPP
 #define SPIDER_SERVER_COMMANDHANDLER_HPP
 
+#include <unordered_map>
 #include <Protocol/Messages.hpp>
 
 namespace spi
@@ -12,9 +13,9 @@ namespace spi
     class CommandHandler
     {
     public:
-        proto::MessageType identifyMessage(const proto::BufferT &buff) const
+        proto::MessageType identifyMessage(const Buffer &buff) const
         {
-            uint32_t conv = proto::Serializer::unserializeInt(buff, 0);
+            uint32_t conv = Serializer::unserializeInt(buff, 0);
 
             for (const proto::MessageType &cur : proto::MessageType::values()) {
                 if (conv == static_cast<uint32_t>(cur)) {
@@ -24,11 +25,11 @@ namespace spi
             return proto::MessageType::Unknown;
         }
 
-        proto::BufferT makeHeader(proto::MessageType type) const noexcept
+        Buffer makeHeader(proto::MessageType type) const noexcept
         {
-            proto::BufferT ret;
+            Buffer ret;
 
-            proto::Serializer::serializeInt(ret, type);
+            Serializer::serializeInt(ret, type);
             return ret;
         }
 
@@ -77,6 +78,16 @@ namespace spi
                    && type != proto::MessageType::MouseMove
                    && type != proto::MessageType::MouseClick;
         }
+
+        using MessageCallbackT = std::function<void()>;
+
+        template <typename ...Args>
+        void onMessages(MessageCallbackT &&cb, Args &&...types) noexcept
+        {
+            (_cbs.emplace((proto::MessageType::EnumType)types, std::forward<MessageCallbackT>(cb)), ...);
+        }
+
+        std::unordered_map<proto::MessageType::EnumType, MessageCallbackT> _cbs;
     };
 }
 
