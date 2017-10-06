@@ -6,6 +6,7 @@
 #define SPIDER_SERVER_COMMANDHANDLER_HPP
 
 #include <unordered_map>
+#include <functional>
 #include <Protocol/Messages.hpp>
 
 namespace spi
@@ -44,7 +45,7 @@ namespace spi
                 case proto::MessageType::Bye:
                     return proto::Bye::SerializedSize;
                 case proto::MessageType::Hello:
-                    return proto::ReplyCode::SerializedSize;
+                    return proto::Hello::SerializedSize;
                 case proto::MessageType::KeyEvent:
                     return proto::KeyEvent::SerializedSize;
                 case proto::MessageType::MouseClick:
@@ -79,13 +80,54 @@ namespace spi
                    && type != proto::MessageType::MouseClick;
         }
 
-        using MessageCallbackT = std::function<void()>;
+        using HandlerT = std::function<void(proto::MessageType, const Buffer &)>;
+        using MessageCallbackT = std::function<void(const ILoggable &)>;
 
-        template <typename ...Args>
-        void onMessages(MessageCallbackT &&cb, Args &&...types) noexcept
+        template <typename T, typename ...Args>
+        void onMessages(const MessageCallbackT &cb, T t, Args ...types) noexcept
         {
-            (_cbs.emplace((proto::MessageType::EnumType)types, std::forward<MessageCallbackT>(cb)), ...);
+            _cbs.emplace((proto::MessageType::EnumType)t, cb);
+            (_cbs.emplace((proto::MessageType::EnumType)types, cb), ...);
         }
+
+        void handleBinaryCommand(proto::MessageType type, const Buffer &v)
+        {
+            _handlers.find((proto::MessageType::EnumType)type)->second(type, v);
+        }
+
+    private:
+        const std::unordered_map<proto::MessageType::EnumType, HandlerT> _handlers{
+            {
+                proto::MessageType::ReplyCode, [&](proto::MessageType type, const Buffer &v) {
+                proto::ReplyCode rep(v);
+
+                _cbs[type](rep);
+            }},
+            {
+                proto::MessageType::Hello, [&](proto::MessageType type, const Buffer &v) {
+                proto::Hello ehlo(v);
+
+                _cbs[type](ehlo);
+            }},
+            {
+                proto::MessageType::KeyEvent,  [&](proto::MessageType type, const Buffer &v) {
+                proto::KeyEvent ke(v);
+
+                _cbs[type](ke);
+            }},
+            {
+                proto::MessageType::MouseClick, [&](proto::MessageType type, const Buffer &v) {
+                proto::MouseClick mc(v);
+
+                _cbs[type](mc);
+            }},
+            {
+                proto::MessageType::MouseMove, [&](proto::MessageType type, const Buffer &v) {
+                proto::MouseMove mm(v);
+
+                _cbs[type](mm);
+            }},
+        };
 
         std::unordered_map<proto::MessageType::EnumType, MessageCallbackT> _cbs;
     };

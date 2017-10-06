@@ -12,7 +12,8 @@ TEST(Protocol, SerializationReplyCode)
 
     rep.code = 123;
 
-    auto buf = rep.serialize();
+    spi::Buffer buf;
+    rep.serialize(buf);
     ASSERT_EQ(buf.size(), spi::proto::ReplyCode::SerializedSize);
 
     spi::proto::ReplyCode result(buf);
@@ -27,7 +28,8 @@ TEST(Protocol, SerializationKeyEvent)
     ke.state = spi::proto::KeyState::Down;
     ke.timestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
 
-    auto buf = ke.serialize();
+    spi::Buffer buf;
+    ke.serialize(buf);
     ASSERT_EQ(buf.size(), spi::proto::KeyEvent::SerializedSize);
 
     spi::proto::KeyEvent result(buf);
@@ -44,7 +46,8 @@ TEST(Protocol, SerializationRawData)
 
     raw.bytes.insert(raw.bytes.begin(), data.begin(), data.end());
 
-    auto buf = raw.serialize();
+    spi::Buffer buf;
+    raw.serialize(buf);
     ASSERT_EQ(buf.size(), sizeof(uint32_t) + data.length());
 
     spi::proto::RawData result(buf);
@@ -61,17 +64,18 @@ TEST(Protocol, Hello)
 {
     spi::proto::Hello h;
 
-    h.macAddress = "aaaaaa";
+    h.macAddress.get();
     h.md5 = utils::MD5("this is a test");
     h.port = 12345;
     h.version = 1;
 
-    auto buf = h.serialize();
+    spi::Buffer buf;
+    h.serialize(buf);
     ASSERT_EQ(buf.size(), 26u);
 
     spi::proto::Hello result(buf);
 
-    ASSERT_EQ(h.macAddress, result.macAddress);
+    ASSERT_EQ(h.macAddress.raw(), result.macAddress.raw());
     ASSERT_EQ(h.md5.raw(), result.md5.raw());
     ASSERT_EQ(h.port, result.port);
     ASSERT_EQ(h.version, result.version);
@@ -79,21 +83,21 @@ TEST(Protocol, Hello)
 
 TEST(Protocol, Empty)
 {
-    spi::proto::BufferT empty;
+    spi::Buffer empty;
 
-    ASSERT_THROW(spi::proto::ReplyCode code(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::RawData raw(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::Hello hello(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::KeyEvent ke(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::MouseClick mc(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::MouseMove mm(empty), spi::proto::UnserializationError);
-    ASSERT_THROW(spi::proto::ImageData id(empty), spi::proto::UnserializationError);
+    ASSERT_THROW(spi::proto::ReplyCode code(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::RawData raw(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::Hello hello(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::KeyEvent ke(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::MouseClick mc(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::MouseMove mm(empty), spi::UnserializationError);
+    ASSERT_THROW(spi::proto::ImageData id(empty), spi::UnserializationError);
 }
 
 TEST(ProtocolMessage, MessageIdentification)
 {
     spi::CommandHandler cmdHandler;
-    spi::proto::BufferT buf{0x01, 0x01, 0x01, 0x01};
+    spi::Buffer buf{0x01, 0x01, 0x01, 0x01};
 
     ASSERT_EQ(cmdHandler.identifyMessage(buf), spi::proto::MessageType::Unknown);
 

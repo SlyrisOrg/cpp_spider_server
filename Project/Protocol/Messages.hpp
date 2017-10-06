@@ -31,14 +31,11 @@ namespace spi::proto
             code = Serializer::unserializeInt(buff, 0);
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
+            out.reserve(out.size() + SerializedSize);
 
-            ret.reserve(SerializedSize);
-
-            Serializer::serializeInt(ret, code);
-            return ret;
+            Serializer::serializeInt(out, code);
         }
 
         std::string stringify() const noexcept override
@@ -51,9 +48,8 @@ namespace spi::proto
     {
         static constexpr const size_t SerializedSize = 0;
 
-        Buffer serialize() const noexcept override
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
-            return Buffer();
         }
 
         std::string stringify() const noexcept override
@@ -73,15 +69,12 @@ namespace spi::proto
             bytes = Serializer::unserializeBuff(buff, 0);
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
+            out.reserve(out.size() + bytes.size() + 4);
 
-            ret.reserve(bytes.size() + 4);
-
-            Serializer::serializeInt(ret, static_cast<uint32_t>(bytes.size()));
-            ret.insert(ret.end(), bytes.begin(), bytes.end());
-            return ret;
+            Serializer::serializeInt(out, static_cast<uint32_t>(bytes.size()));
+            out.insert(out.end(), bytes.begin(), bytes.end());
         }
 
         std::string stringify() const noexcept override
@@ -116,22 +109,19 @@ namespace spi::proto
             port = Serializer::unserializeShort(buff, 24);
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
-
-            ret.reserve(SerializedSize);
+            out.reserve(out.size() + SerializedSize);
 
             std::vector<Byte> macAddrBytes(macAddress.raw().begin(), macAddress.raw().end());
-            Serializer::serializeBytes(ret, macAddrBytes);
+            Serializer::serializeBytes(out, macAddrBytes);
 
-            Serializer::serializeShort(ret, version);
+            Serializer::serializeShort(out, version);
 
             std::vector<Byte> bytes(md5.raw().begin(), md5.raw().end());
-            Serializer::serializeBytes(ret, bytes);
+            Serializer::serializeBytes(out, bytes);
 
-            Serializer::serializeShort(ret, port);
-            return ret;
+            Serializer::serializeShort(out, port);
         }
 
         std::string stringify() const noexcept override
@@ -164,17 +154,13 @@ namespace spi::proto
             state = static_cast<KeyState::EnumType>(Serializer::unserializeInt(buff, 12));
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
+            out.reserve(out.size() + SerializedSize);
 
-            ret.reserve(SerializedSize);
-
-            Serializer::serializeTimestamp(ret, timestamp);
-            Serializer::serializeInt(ret, static_cast<uint32_t>(code));
-            Serializer::serializeInt(ret, static_cast<uint32_t>(state));
-
-            return ret;
+            Serializer::serializeTimestamp(out, timestamp);
+            Serializer::serializeInt(out, static_cast<uint32_t>(code));
+            Serializer::serializeInt(out, static_cast<uint32_t>(state));
         }
 
         std::string stringify() const noexcept override
@@ -210,18 +196,15 @@ namespace spi::proto
             button = static_cast<MouseButton::EnumType>(Serializer::unserializeInt(buff, 20));
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
+            out.reserve(out.size() + SerializedSize);
 
-            ret.reserve(SerializedSize);
-
-            Serializer::serializeTimestamp(ret, timestamp);
-            Serializer::serializeInt(ret, x);
-            Serializer::serializeInt(ret, y);
-            Serializer::serializeInt(ret, static_cast<uint32_t>(state));
-            Serializer::serializeInt(ret, static_cast<uint32_t>(button));
-            return ret;
+            Serializer::serializeTimestamp(out, timestamp);
+            Serializer::serializeInt(out, x);
+            Serializer::serializeInt(out, y);
+            Serializer::serializeInt(out, static_cast<uint32_t>(state));
+            Serializer::serializeInt(out, static_cast<uint32_t>(button));
         }
 
         std::string stringify() const noexcept override
@@ -255,16 +238,13 @@ namespace spi::proto
             y = Serializer::unserializeInt(buff, 12);
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            std::vector<Byte> ret;
+            out.reserve(SerializedSize);
 
-            ret.reserve(SerializedSize);
-
-            Serializer::serializeTimestamp(ret, timestamp);
-            Serializer::serializeInt(ret, x);
-            Serializer::serializeInt(ret, y);
-            return ret;
+            Serializer::serializeTimestamp(out, timestamp);
+            Serializer::serializeInt(out, x);
+            Serializer::serializeInt(out, y);
         }
 
         std::string stringify() const noexcept override
@@ -288,14 +268,11 @@ namespace spi::proto
             bytes = Serializer::unserializeBuff(buff, 0);
         }
 
-        Buffer serialize() const noexcept override
+        void serialize(Buffer &out) const noexcept override
         {
-            Buffer ret;
+            out.reserve(out.size() + bytes.size() + sizeof(uint32_t));
 
-            ret.reserve(bytes.size() + sizeof(uint32_t));
-
-            Serializer::serializeBuff(ret, bytes);
-            return ret;
+            Serializer::serializeBuff(out, bytes);
         }
 
         std::string stringify() const noexcept override
@@ -308,9 +285,8 @@ namespace spi::proto
     {
         static constexpr const size_t SerializedSize = 0;
 
-        Buffer serialize() const noexcept override
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
-            return Buffer();
         }
 
         std::string stringify() const noexcept override
@@ -323,9 +299,8 @@ namespace spi::proto
     {
         static constexpr const size_t SerializedSize = 0;
 
-        Buffer serialize() const noexcept override
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
-            return Buffer();
         }
 
         std::string stringify() const noexcept override
@@ -338,9 +313,8 @@ namespace spi::proto
     {
         static constexpr const size_t SerializedSize = 0;
 
-        Buffer serialize() const noexcept override
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
-            return Buffer();
         }
 
         std::string stringify() const noexcept override

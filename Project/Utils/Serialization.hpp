@@ -25,7 +25,7 @@ namespace spi
     struct ISerializable
     {
     public:
-        virtual Buffer serialize() const noexcept = 0;
+        virtual void serialize(Buffer &) const noexcept = 0;
     };
 
     class Serializer
