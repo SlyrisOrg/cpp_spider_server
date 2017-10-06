@@ -72,9 +72,9 @@ namespace spi::net
         }
 
         template <typename BufferT>
-        size_t readSome(const BufferT &buff) noexcept
+        size_t readSome(const BufferT &buff, ErrorCode &ec) noexcept
         {
-            return _socket.read_some(boost::asio::buffer(buff.data(), buff.size()));
+            return _socket.read_some(boost::asio::buffer(buff.data(), buff.size()), ec.get());
         }
 
         template <typename BufferT, typename CallBackT>
@@ -84,9 +84,9 @@ namespace spi::net
         }
 
         template <typename BufferT>
-        size_t writeSome(const BufferT &buff) noexcept
+        size_t writeSome(const BufferT &buff, ErrorCode &ec) noexcept
         {
-            return _socket.write_some(boost::asio::buffer(buff.data(), buff.size()));
+            return _socket.write_some(boost::asio::buffer(buff.data(), buff.size()), ec.get());
         }
 
         Socket::lowest_layer_type &rawSocket() noexcept
