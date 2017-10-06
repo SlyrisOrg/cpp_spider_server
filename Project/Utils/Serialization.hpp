@@ -26,6 +26,8 @@ namespace spi
     {
     public:
         virtual void serialize(Buffer &) const noexcept = 0;
+
+        virtual void serializeTypeInfo(Buffer &) const noexcept = 0;
     };
 
     class Serializer

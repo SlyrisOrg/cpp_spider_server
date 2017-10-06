@@ -18,6 +18,8 @@
 
 namespace spi::proto
 {
+    static constexpr const size_t MessageHeaderSize = sizeof(uint32_t);
+
     struct ReplyCode : public ILoggable
     {
         uint32_t code;
@@ -38,6 +40,13 @@ namespace spi::proto
             Serializer::serializeInt(out, code);
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::ReplyCode));
+        }
+
         std::string stringify() const noexcept override
         {
             return "[ReplyCode] " + std::to_string(code);
@@ -50,6 +59,13 @@ namespace spi::proto
 
         void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::Bye));
         }
 
         std::string stringify() const noexcept override
@@ -75,6 +91,13 @@ namespace spi::proto
 
             Serializer::serializeInt(out, static_cast<uint32_t>(bytes.size()));
             out.insert(out.end(), bytes.begin(), bytes.end());
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RawData));
         }
 
         std::string stringify() const noexcept override
@@ -124,6 +147,13 @@ namespace spi::proto
             Serializer::serializeShort(out, port);
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::Hello));
+        }
+
         std::string stringify() const noexcept override
         {
             std::stringstream ss;
@@ -161,6 +191,13 @@ namespace spi::proto
             Serializer::serializeTimestamp(out, timestamp);
             Serializer::serializeInt(out, static_cast<uint32_t>(code));
             Serializer::serializeInt(out, static_cast<uint32_t>(state));
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::KeyEvent));
         }
 
         std::string stringify() const noexcept override
@@ -207,6 +244,13 @@ namespace spi::proto
             Serializer::serializeInt(out, static_cast<uint32_t>(button));
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::MouseClick));
+        }
+
         std::string stringify() const noexcept override
         {
             std::stringstream ss;
@@ -247,6 +291,13 @@ namespace spi::proto
             Serializer::serializeInt(out, y);
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::MouseMove));
+        }
+
         std::string stringify() const noexcept override
         {
             std::stringstream ss;
@@ -275,6 +326,13 @@ namespace spi::proto
             Serializer::serializeBuff(out, bytes);
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::ImageData));
+        }
+
         std::string stringify() const noexcept override
         {
             return "[ImageData] size: " + std::to_string(bytes.size());
@@ -287,6 +345,13 @@ namespace spi::proto
 
         void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::Screenshot));
         }
 
         std::string stringify() const noexcept override
@@ -303,6 +368,13 @@ namespace spi::proto
         {
         }
 
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::StealthMode));
+        }
+
         std::string stringify() const noexcept override
         {
             return "[StealthMode] requested switch to stealth mode";
@@ -315,6 +387,13 @@ namespace spi::proto
 
         void serialize([[maybe_unused]] Buffer &out) const noexcept override
         {
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::ActiveMode));
         }
 
         std::string stringify() const noexcept override
