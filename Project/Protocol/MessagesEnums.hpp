@@ -19,9 +19,9 @@ namespace spi::proto
          MouseClick,
          MouseMove,
          ImageData,
-         Screenshot,
          StealthMode,
-         ActiveMode
+         ActiveMode,
+         Screenshot
     );
 
     ENUM(KeyCode,

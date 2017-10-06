@@ -13,6 +13,7 @@
 #include <utils/Endian.hpp>
 #include <utils/MD5.hpp>
 #include <Utils/ILoggable.hpp>
+#include <net/MACAddress.hpp>
 #include <Protocol/MessagesEnums.hpp>
 
 namespace spi::proto
@@ -91,7 +92,7 @@ namespace spi::proto
 
     struct Hello : public ILoggable
     {
-        std::string macAddress{"aaaaaa"};
+        ::net::MACAddress macAddress;
         utils::MD5 md5;
         uint16_t version;
         uint16_t port;
@@ -103,7 +104,9 @@ namespace spi::proto
         Hello(const Buffer &buff)
         {
             auto macAddrBytes = Serializer::unserializeBytes(buff, 0, 6);
-            macAddress = std::string(macAddrBytes.begin(), macAddrBytes.end());
+            ::net::MACAddress::RawMACAddress rawAddr;
+            std::copy(macAddrBytes.begin(), macAddrBytes.end(), rawAddr.begin());
+            macAddress.setRaw(rawAddr);
             version = Serializer::unserializeShort(buff, 6);
 
             auto md5Bytes = Serializer::unserializeBytes(buff, 8, 16);
@@ -119,7 +122,7 @@ namespace spi::proto
 
             ret.reserve(SerializedSize);
 
-            std::vector<Byte> macAddrBytes(macAddress.begin(), macAddress.end());
+            std::vector<Byte> macAddrBytes(macAddress.raw().begin(), macAddress.raw().end());
             Serializer::serializeBytes(ret, macAddrBytes);
 
             Serializer::serializeShort(ret, version);
@@ -136,7 +139,7 @@ namespace spi::proto
             std::stringstream ss;
 
             ss << "[Hello] ";
-            ss << "MAC: " << macAddress << ", ";
+            ss << "MAC: " << macAddress.toString() << ", ";
             ss << "version: " << version << ", ";
             ss << "MD5: " << md5.toString() << ", ";
             ss << "port: " << port;
