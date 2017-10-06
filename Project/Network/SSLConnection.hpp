@@ -39,8 +39,7 @@ namespace spi::net
             asio::async_connect(_socket.lowest_layer(), it, std::forward<CallBackT>(cb));
         }
 
-        template <typename CallBackT>
-        ErrorCode connect(const std::string &host, unsigned short port, CallBackT &&cb) noexcept
+        ErrorCode connect(const std::string &host, unsigned short port) noexcept
         {
             asio::ip::tcp::resolver resolver(_socket.get_io_service());
             asio::ip::tcp::resolver::query q(host, std::to_string(port));
@@ -72,7 +71,7 @@ namespace spi::net
             _socket.async_read_some(boost::asio::buffer(buff.data(), buff.size()), std::forward<CallBackT>(cb));
         }
 
-        template <typename BufferT, typename CallBackT>
+        template <typename BufferT>
         size_t readSome(const BufferT &buff) noexcept
         {
             return _socket.read_some(boost::asio::buffer(buff.data(), buff.size()));
@@ -84,8 +83,8 @@ namespace spi::net
             _socket.async_write_some(boost::asio::buffer(buff.data(), buff.size()), std::forward<CallBackT>(cb));
         }
 
-        template <typename BufferT, typename CallBackT>
-        size_t writeSome(const BufferT &buff, CallBackT &&cb) noexcept
+        template <typename BufferT>
+        size_t writeSome(const BufferT &buff) noexcept
         {
             return _socket.write_some(boost::asio::buffer(buff.data(), buff.size()));
         }
