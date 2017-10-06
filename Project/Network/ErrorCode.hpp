@@ -15,6 +15,8 @@ namespace spi
     public:
         using InternalT = boost::system::error_code;
 
+        ErrorCode() = default;
+
         ErrorCode(const InternalT &ec) noexcept : _ec(ec)
         {
         }
