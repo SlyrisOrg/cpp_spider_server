@@ -7,7 +7,9 @@
 
 #include <vector>
 #include <exception>
+#include <chrono>
 #include <net/MACAddress.hpp>
+#include <utils/Endian.hpp>
 
 namespace spi
 {
@@ -17,7 +19,7 @@ namespace spi
     class UnserializationError : public std::exception
     {
     public:
-        const char *what() const noexcept
+        const char *what() const noexcept override
         {
             return "Data could not be unserialized";
         }
