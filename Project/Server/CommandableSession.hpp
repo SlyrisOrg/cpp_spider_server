@@ -57,12 +57,11 @@ namespace spi
         /** Command reading / handling */
 
     private:
-        void __readCommandHeaderChunk() noexcept
+        template <typename CallBackT>
+        void __readData(CallBackT &&cb) noexcept
         {
-            _conn.asyncReadSome(net::BufferView(_readBuff.data() + _nbReadBytes,
-                                                _readBuff.size() - _nbReadBytes),
-                                boost::bind(&CommandableSession::__handleCommandHeader, this,
-                                            net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
+            _conn.asyncReadSome(net::BufferView(_readBuff.data() + _nbReadBytes, _readBuff.size() - _nbReadBytes),
+                                std::forward<CallBackT>(cb));
         }
 
         void __readCommandHeader() noexcept
@@ -70,7 +69,8 @@ namespace spi
             _nbReadBytes = 0;
             _expectedSize = 4;
             _readBuff.resize(4);
-            __readCommandHeaderChunk();
+            __readData(boost::bind(&CommandableSession::__handleCommandHeader, this,
+                                   net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
         }
 
         void __handleCommandHeader(const ErrorCode &ec, size_t bytesTransferred)
@@ -83,58 +83,42 @@ namespace spi
 
             _nbReadBytes += bytesTransferred;
             if (_nbReadBytes < _expectedSize) {
-                __readCommandHeaderChunk();
+                __readData(boost::bind(&CommandableSession::__handleCommandHeader, this,
+                                       net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
             } else {
                 auto type = _cmdHandler.identifyMessage(_readBuff);
 
                 if (type == spi::proto::MessageType::Unknown) {
                     _log(logging::Level::Warning) << "Ignoring unrecognized command" << std::endl;
                     __readCommandHeader();
+                } else {
+                    __handleCommandType(type);
                 }
-                __handleCommandType(type);
             }
         }
 
         void __handleCommandType(proto::MessageType type)
         {
+            size_t size;
+
             if (!_cmdHandler.canHandleCommand(type)) {
                 _log(logging::Level::Warning) << "Rejecting unexpected command " << type.toString() << std::endl;
                 _errorCb(this);
-            } else if (_cmdHandler.getSerializedSize(type) == 0) {
+            } else if ((size = _cmdHandler.getSerializedSize(type)) == 0) {
                 _cmdHandler.handleBinaryCommand(type, Buffer());
             } else {
-                __readCommandBody(type);
+                __readCommandBody(type, size);
             }
         }
 
-        void __readCommandChunk() noexcept
+        void __readCommandBody(spi::proto::MessageType type, size_t size) noexcept
         {
-            _conn.asyncReadSome(net::BufferView(_readBuff.data() + _nbReadBytes,
-                                                _readBuff.size() - _nbReadBytes),
-                                boost::bind(&CommandableSession::__handleCommand, this,
-                                            net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
-        }
-
-        void __readCommandBody(spi::proto::MessageType type) noexcept
-        {
-            if (!_cmdHandler.canHandleCommand(type)) {
-                _log(logging::Level::Warning) << "Received unexpected command " << type.toString() << std::endl;
-                _errorCb(this);
-                return;
-            }
-
-            size_t size = _cmdHandler.getSerializedSize(type);
-
-            if (size == CommandHandler::invalidSize) {
-                _log(logging::Level::Warning) << "Received unexpected command " << type.toString() << std::endl;
-                _errorCb(this);
-            } else {
-                _nextCmdType = type;
-                _nbReadBytes = 0;
-                _expectedSize = size;
-                _readBuff.resize(size);
-                __readCommandChunk();
-            }
+            _nextCmdType = type;
+            _nbReadBytes = 0;
+            _expectedSize = size;
+            _readBuff.resize(size);
+            __readData(boost::bind(&CommandableSession::__handleCommand, this,
+                                   net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
         }
 
         void __handleCommand(const ErrorCode &ec, size_t bytesTransferred)
@@ -142,7 +126,8 @@ namespace spi
             if (!ec) {
                 _nbReadBytes += bytesTransferred;
                 if (_nbReadBytes < _expectedSize) {
-                    __readCommandChunk();
+                    __readData(boost::bind(&CommandableSession::__handleCommand, this,
+                                           net::ErrorPlaceholder, net::BytesTransferredPlaceholder));
                 } else {
                     _cmdHandler.handleBinaryCommand(_nextCmdType, _readBuff);
                     __readCommandHeader();
