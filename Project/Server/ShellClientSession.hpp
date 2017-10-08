@@ -99,6 +99,7 @@ namespace spi
             Buffer buff;
             ErrorCode ec;
 
+            repl.serializeTypeInfo(buff);
             repl.serialize(buff);
             _conn.writeSome(buff, ec);
 

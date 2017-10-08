@@ -55,9 +55,13 @@ int main(int ac, char **av)
     }
     spi::Core server(conf);
 
-    if (!server.start()) {
-        std::cerr << "Unable to start server !" << std::endl;
-        return 1;
+    try {
+        if (!server.start()) {
+            std::cerr << "Unable to start server !" << std::endl;
+            return 1;
+        }
+    } catch (...) {
+        std::cerr << "An unknown error occurred !" << std::endl;
     }
     return 0;
 }
