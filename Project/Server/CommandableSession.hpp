@@ -2,8 +2,8 @@
 // Created by doom on 07/10/17.
 //
 
-#ifndef SPIDER_SERVER_COMMANDABLECLIENTSESSION_HPP
-#define SPIDER_SERVER_COMMANDABLECLIENTSESSION_HPP
+#ifndef SPIDER_COMMANDABLESESSION_HPP
+#define SPIDER_COMMANDABLESESSION_HPP
 
 #include <boost/bind.hpp>
 #include <log/Logger.hpp>
@@ -106,6 +106,7 @@ namespace spi
                 _errorCb(this);
             } else if ((size = _cmdHandler.getSerializedSize(type)) == 0) {
                 _cmdHandler.handleBinaryCommand(type, Buffer());
+                __readCommandHeader();
             } else {
                 __readCommandBody(type, size);
             }
@@ -151,4 +152,4 @@ namespace spi
     };
 }
 
-#endif //SPIDER_SERVER_COMMANDABLECLIENTSESSION_HPP
+#endif //SPIDER_COMMANDABLESESSION_HPP

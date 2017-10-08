@@ -60,20 +60,33 @@ namespace spi
             _id.setRaw(hello.macAddress.raw());
             _identified = true;
             _logHandle.appendEntry(hello);
-//            _commandConn.asyncConnect(_conn.getRemoteAddress(), hello.port,
-//                                      boost::bind(&SpiderClientSession::__handleCommandConnect, this,
-//                                                  spi::net::ErrorPlaceholder));
+            _commandConn.asyncConnect(_conn.getRemoteAddress(), hello.port,
+                                      boost::bind(&SpiderClientSession::__handleCommandConnect, this,
+                                                  spi::net::ErrorPlaceholder));
         }
 
         /** Command connection helpers */
 
-        void __handleCommandConnect(const ErrorCode &ec)
+        void __handleCommandSSLHandshake(const ErrorCode &ec)
         {
             if (!ec) {
                 _hasCommandConn = true;
                 _log(logging::Level::Debug) << "Successfully obtained a command channel with client" << std::endl;
             } else {
-                _log(logging::Level::Warning) << "Unable to obtain a command channel with client" << std::endl;
+                _log(logging::Level::Warning) << "Unable to obtain a command channel with client"
+                                              << ec.message() << std::endl;
+            }
+        }
+
+        void __handleCommandConnect(const ErrorCode &ec)
+        {
+            if (!ec) {
+                _commandConn.asyncHandshake(net::SSLConnection::HandshakeType::Client,
+                                            boost::bind(&SpiderClientSession::__handleCommandSSLHandshake, this,
+                                                        net::ErrorPlaceholder));
+            } else {
+                _log(logging::Level::Warning) << "Unable to obtain a command channel with client"
+                                              << ec.message() << std::endl;
             }
         }
 
@@ -84,7 +97,10 @@ namespace spi
 
             l.serializeTypeInfo(buff);
             l.serialize(buff);
-            _conn.writeSome(buff, ec);
+            _commandConn.writeSome(buff, ec);
+            if (ec) {
+                _log(logging::Level::Warning) << "Unable to send command to client: " << ec.message() << std::endl;
+            }
         }
 
         bool hasCommandConn() const noexcept

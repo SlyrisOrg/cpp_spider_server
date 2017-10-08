@@ -58,6 +58,8 @@ namespace spi
             if (client) {
                 MessageT toSend;
 
+                _log(logging::Level::Debug) << "Transmitting request to client "
+                                            << client->getID().toString() << std::endl;
                 client->sendCommand(toSend, ec);
                 repCode.code = !ec ? proto::ReplyType::OK : proto::ReplyType::KO;
             } else {
