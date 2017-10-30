@@ -4,6 +4,3 @@
 [submodule "vendor/core"]
 	path = vendor/core
 	url = ssh://git.slyris.eu:29418/core
-[submodule "cmake-utils"]
-	path = cmake-utils
-	url = ssh://git.slyris.eu:29418/cmake-utils

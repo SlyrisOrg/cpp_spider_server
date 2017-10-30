@@ -2,10 +2,12 @@ cmake_minimum_required(VERSION 3.7)
 project(spider_server)
 
 ##START CONFIG CMAKE
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake-utils/Module)
-set(CMAKE_CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake-utils)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/vendor/core/cmake-utils/Module)
+set(CMAKE_CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/vendor/core/cmake-utils)
 
 include(${CMAKE_CONFIG_PATH}/include.cmake)
+
+add_subdirectory(vendor/core)
 
 PROJECT_FOLDER(${PROJECT_NAME})
 STANDARD_COMPILATION_SETTINGS()
@@ -64,8 +66,9 @@ set(SOURCES_SPIDER
 
 add_executable(${PROJECT_NAME} ${SOURCES_SPIDER})
 include_directories(Project)
-include_directories(vendor/core/Project/core-utils/project/)
-include_directories(vendor/core/Project/core-network/project/)
+#include_directories(vendor/core/Project/core-utils/project/)
+#include_directories(vendor/core/Project/core-network/project/)
 
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-add_subdirectory(test)
+target_link_libraries(${PROJECT_NAME} PUBLIC core-log core-net PRIVATE ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(${PROJECT_NAME} PUBLIC Project)
+#add_subdirectory(test)
