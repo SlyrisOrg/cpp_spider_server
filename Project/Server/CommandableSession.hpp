@@ -22,9 +22,7 @@ namespace spi
         {
         }
 
-        virtual ~CommandableSession() noexcept
-        {
-        }
+        virtual ~CommandableSession() noexcept = default;
 
         void onError(std::function<void(CommandableSession *)> &&fct) noexcept
         {
@@ -145,7 +143,7 @@ namespace spi
         CommandHandler _cmdHandler;
         std::function<void(CommandableSession *)> _errorCb{[](CommandableSession *) {}};
 
-        std::vector<spi::Byte> _readBuff;
+        Buffer _readBuff;
         size_t _nbReadBytes{0};
         size_t _expectedSize{0};
         proto::MessageType _nextCmdType{proto::MessageType::Unknown};

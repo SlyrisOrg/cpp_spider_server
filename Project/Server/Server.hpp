@@ -42,8 +42,10 @@ namespace spi
         {
             _log(logging::Level::Debug) << "Setting up server on ports " << port << " and " << shellPort << std::endl;
 
-            _clientsAcceptor.bind(port);
-            _rshAcceptor.bind(shellPort);
+            if (_clientsAcceptor.bind(port) || _rshAcceptor.bind(shellPort)) {
+                _log(logging::Level::Error) << "Unable to listen for incoming connections" << std::endl;
+                return false;
+            }
 
             if (!_ctx.useCertificateFile(certFile) || !_ctx.usePrivateKeyFile(keyFile)) {
                 _log(logging::Level::Error) << "Failed setting up a valid SSL context" << std::endl;
@@ -57,14 +59,14 @@ namespace spi
         }
 
     private:
-        void __addClient(SpiderClientSession *clt)
+        void __addClient(SpiderClientSession *clt) noexcept
         {
             _clients.push_back(clt);
         }
 
         void __removeClient(CommandableSession *clt)
         {
-            SpiderClientSession *spiClt = static_cast<SpiderClientSession *>(clt);
+            auto *spiClt = static_cast<SpiderClientSession *>(clt);
 
             _clients.erase(std::remove_if(_clients.begin(), _clients.end(), [spiClt](const auto &cur) {
                 return cur == spiClt;
@@ -74,7 +76,7 @@ namespace spi
 
         void __removeRemoteShell(CommandableSession *clt)
         {
-            delete static_cast<ShellClientSession *>(clt);
+            delete clt;
             __setupRshAcceptor();
         }
 
