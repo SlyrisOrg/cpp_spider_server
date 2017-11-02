@@ -16,12 +16,9 @@ namespace spi::log
     class RotatingFileLogHandle : public AbstractLogHandle
     {
     public:
-        RotatingFileLogHandle(const fs::path &root) noexcept : _baseDirectory(root)
-        {
-        }
-
         ~RotatingFileLogHandle() noexcept override
         {
+            flush();
         }
 
     private:
@@ -46,8 +43,10 @@ namespace spi::log
 
         void __rotate() noexcept
         {
-            if (_out.is_open())
+            if (_out.is_open()) {
+                flush();
                 _out.close();
+            }
             if (_fileNb == 0) {
                 _fileNb = __getFileNb();
             } else {
@@ -59,23 +58,39 @@ namespace spi::log
         }
 
     public:
-        void setHandleName(std::string name) noexcept
+        void setRoot(const std::string &root) noexcept override
         {
+            _baseDirectory = root;
+        }
+
+        void setID(const std::string &name) noexcept override
+        {
+            auto cpy = name;
             const std::string reject = "\\:?| ";
 
-            for (auto &cur : name) {
+            for (auto &cur : cpy) {
                 if (reject.find(cur) != std::string::npos) {
                     cur = '_';
                 }
             }
-            _handleDirectory = _baseDirectory / name;
+            _handleDirectory = _baseDirectory / cpy;
         }
 
-        bool setup() noexcept
+        void setIOManager([[maybe_unused]] net::IOManager &manager) noexcept override
         {
+            //This logger doesn't need an IOManager
+        }
+
+        bool setup() noexcept override
+        {
+            if (!fs::exists(_baseDirectory) && !fs::create_directories(_baseDirectory)) {
+                return false;
+            }
+
             if (!fs::exists(_handleDirectory) && !fs::create_directories(_handleDirectory)) {
                 return false;
             }
+
             __rotate();
             return true;
         }

@@ -15,7 +15,7 @@ namespace spi
     public:
         SpiderClientSession(net::IOManager &io, net::SSLContext &ctx, const fs::path &logRoot) :
             CommandableSession(io, ctx, "client-sessions"),
-            _logHandle(logRoot),
+            _logHandle(new log::RotatingFileLogHandle()),
             _commandConn(io, ctx)
         {
             _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__logMessage, this, _1),
@@ -25,10 +25,12 @@ namespace spi
                                    proto::MessageType::ReplyCode);
             _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__handleHello, this, _1),
                                    proto::MessageType::Hello);
+            _logHandle->setRoot(logRoot.string()); //TODO: take a string
         }
 
         ~SpiderClientSession() noexcept override
         {
+            delete _logHandle;
         }
 
         void startSession() noexcept
@@ -45,7 +47,7 @@ namespace spi
                 _log(logging::Level::Warning) << "Rejecting log request from unidentified client" << std::endl;
             } else {
                 _log(logging::Level::Debug) << l.stringify() << std::endl;
-                _logHandle.appendEntry(l);
+                _logHandle->appendEntry(l);
             }
         }
 
@@ -55,11 +57,11 @@ namespace spi
 
             _log(logging::Level::Debug) << "Saying hello to " << hello.macAddress.toString() << std::endl;
             _log(logging::Level::Debug) << "Using version " << hello.version << std::endl;
-            _logHandle.setHandleName(hello.macAddress.toString());
-            _logHandle.setup();
+            _logHandle->setID(hello.macAddress.toString());
+            _logHandle->setup();
             _id.setRaw(hello.macAddress.raw());
             _identified = true;
-            _logHandle.appendEntry(hello);
+            _logHandle->appendEntry(hello);
             _commandConn.asyncConnect(_conn.getRemoteAddress(), hello.port,
                                       boost::bind(&SpiderClientSession::__handleCommandConnect, this,
                                                   spi::net::ErrorPlaceholder));
@@ -114,7 +116,7 @@ namespace spi
         }
 
     private:
-        log::RotatingFileLogHandle _logHandle;
+        AbstractLogHandle *_logHandle;
         bool _identified{false};
         ::net::MACAddress _id;
 
