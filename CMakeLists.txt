@@ -52,6 +52,7 @@ set(SOURCES_SERVER
 set(SOURCES_UTILS
         Project/Utils/Serialization.hpp
         Project/Utils/Stringification.hpp
+        Project/Utils/JSONification.hpp
         Project/Utils/ILoggable.hpp
         )
 
