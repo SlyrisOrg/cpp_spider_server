@@ -15,6 +15,7 @@ namespace spi
     class AbstractLogHandle : utils::NonCopyable
     {
     public:
+
         virtual ~AbstractLogHandle() noexcept = default;
 
         /** Add an entry to the log */
@@ -32,6 +33,8 @@ namespace spi
         /** Setup the handle. After this call, it must be ready to receive entries */
         virtual bool setup() noexcept = 0;
     };
+
+    using LogHandleConstructor = AbstractLogHandle *(*)();
 }
 
 #endif //SPIDER_SERVER_ABSTRACTLOGHANDLER_HPP

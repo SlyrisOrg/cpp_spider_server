@@ -4,20 +4,19 @@
 
 #include <iostream>
 #include <string>
-#include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
 #include <Core/SpiderCore.hpp>
-#include <Protocol/Messages.hpp>
 
 namespace opt = boost::program_options;
 
-static bool fill_conf(spi::Core::Config &conf, const opt::variables_map &vm) noexcept
+static bool fillConf(spi::Core::Config &conf, const opt::variables_map &vm) noexcept
 {
     conf.logRoot = vm["log_dir"].as<std::string>();
     conf.port = vm["port"].as<unsigned short>();
     conf.shellPort = vm["cmd_port"].as<unsigned short>();
     conf.certFile = vm["cert"].as<std::string>();
     conf.keyFile = vm["key"].as<std::string>();
+    conf.logModule = vm["log_module"].as<std::string>();
     return true;
 }
 
@@ -31,6 +30,7 @@ int main(int ac, char **av)
         ("cmd_port", opt::value<unsigned short>()->default_value(31338), "port on which to allow shell connection")
         ("cert", opt::value<std::string>()->default_value("cert.pem"), "the certificate to use for SSL connections")
         ("key", opt::value<std::string>()->default_value("key.pem"), "the private key to use for SSL connections")
+        ("log_module", opt::value<std::string>()->default_value("default"), "the path to the log module to use")
         ("help", "display this help message");
 
     opt::variables_map vm;
@@ -49,7 +49,7 @@ int main(int ac, char **av)
     }
 
     spi::Core::Config conf;
-    if (!fill_conf(conf, vm)) {
+    if (!fillConf(conf, vm)) {
         std::cerr << "Invalid configuration !" << std::endl;
         return 1;
     }

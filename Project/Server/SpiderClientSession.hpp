@@ -6,16 +6,18 @@
 #define SPIDER_SERVER_SPIDERCLIENTSESSION_HPP
 
 #include <Server/CommandableSession.hpp>
-#include <Logging/RotatingFileLogHandle.hpp>
+#include <Logging/AbstractLogHandle.hpp>
 
 namespace spi
 {
     class SpiderClientSession : public CommandableSession
     {
     public:
-        SpiderClientSession(net::IOManager &io, net::SSLContext &ctx, const fs::path &logRoot) :
+        SpiderClientSession(net::IOManager &io, net::SSLContext &ctx,
+                            const std::string &logRoot,
+                            AbstractLogHandle *handle) :
             CommandableSession(io, ctx, "client-sessions"),
-            _logHandle(new log::RotatingFileLogHandle()),
+            _logHandle(handle),
             _commandConn(io, ctx)
         {
             _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__logMessage, this, _1),
@@ -25,7 +27,7 @@ namespace spi
                                    proto::MessageType::ReplyCode);
             _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__handleHello, this, _1),
                                    proto::MessageType::Hello);
-            _logHandle->setRoot(logRoot.string()); //TODO: take a string
+            _logHandle->setRoot(logRoot);
         }
 
         ~SpiderClientSession() noexcept override

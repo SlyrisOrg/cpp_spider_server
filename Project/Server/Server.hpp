@@ -13,6 +13,7 @@
 #include <Network/SSLContext.hpp>
 #include <Server/SpiderClientSession.hpp>
 #include <Server/ShellClientSession.hpp>
+#include <Logging/AbstractLogHandle.hpp>
 
 namespace asio = boost::asio;
 
@@ -38,8 +39,9 @@ namespace spi
 
         bool setup(unsigned short port, unsigned short shellPort,
                    const std::string &certFile, const std::string &keyFile,
-                   const fs::path &logRoot)
+                   const std::string &logRoot, LogHandleConstructor ctor)
         {
+            _logCtor = ctor;
             _log(logging::Level::Debug) << "Setting up server on ports " << port << " and " << shellPort << std::endl;
 
             if (_clientsAcceptor.bind(port) || _rshAcceptor.bind(shellPort)) {
@@ -105,7 +107,7 @@ namespace spi
 
         void __setupClientAcceptor()
         {
-            _nextSession = new SpiderClientSession(_ioMgr, _ctx, _logRoot);
+            _nextSession = new SpiderClientSession(_ioMgr, _ctx, _logRoot, _logCtor());
 
             _clientsAcceptor.onAccept(_nextSession->connection(),
                                       boost::bind(&Server::__onClientAccept, this, _nextSession,
@@ -153,9 +155,11 @@ namespace spi
 
         ShellClientSession *_shellSession{nullptr};
 
-        fs::path _logRoot;
+        std::string _logRoot;
 
         logging::Logger _log;
+
+        LogHandleConstructor _logCtor{nullptr};
     };
 }
 

@@ -11,6 +11,7 @@ add_subdirectory(vendor/core)
 
 PROJECT_FOLDER(${PROJECT_NAME})
 STANDARD_COMPILATION_SETTINGS()
+CPPREST_CONFIG()
 BOOST_CONFIG_SPIDER_SERVER()
 OPENSSL_CONFIG()
 find_package(Threads)
@@ -21,6 +22,9 @@ endif ()
 enable_testing()
 include(CTest)
 
+add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/RotatingFileLogHandle)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/APIConnectedLogHandle)
+
 set(SOURCES_PROTOCOL
         Project/Protocol/MessagesEnums.hpp
         Project/Protocol/Messages.hpp
@@ -30,7 +34,6 @@ set(SOURCES_PROTOCOL
 set(SOURCES_LOGGING
         Project/Logging/LogManager.hpp
         Project/Logging/AbstractLogHandle.hpp
-        Project/Logging/RotatingFileLogHandle.hpp
         )
 
 set(SOURCES_NETWORK
@@ -66,10 +69,12 @@ set(SOURCES_SPIDER
         Project/main.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES_SPIDER})
+
+add_dependencies(${PROJECT_NAME} RotatingFileLogHandle)
+add_dependencies(${PROJECT_NAME} APIConnectedLogHandle)
 include_directories(Project)
 #include_directories(vendor/core/Project/core-utils/project/)
 #include_directories(vendor/core/Project/core-network/project/)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC core-log core-net PRIVATE ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${PROJECT_NAME} PUBLIC core-log core-net core-lib PRIVATE ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(${PROJECT_NAME} PUBLIC Project)
 #add_subdirectory(test)

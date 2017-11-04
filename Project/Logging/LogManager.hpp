@@ -10,22 +10,22 @@
 #include <boost/filesystem.hpp>
 #include <log/Logger.hpp>
 
-namespace fs = boost::filesystem;
+namespace bfs = boost::filesystem;
 
 namespace spi
 {
     class LogManager
     {
     public:
-        bool setup(const fs::path &logRoot) noexcept
+        bool setup(const bfs::path &logRoot) noexcept
         {
             _log(logging::Level::Debug) << "Setting up logging at " << logRoot << std::endl;
-            if (fs::exists(logRoot) && !fs::is_directory(logRoot)) {
+            if (bfs::exists(logRoot) && !bfs::is_directory(logRoot)) {
                 _log(logging::Level::Error) << "Setup failure: " << logRoot
                                             << " already exists and is not a directory" << std::endl;
                 return false;
             }
-            if (!fs::exists(logRoot) && !fs::create_directories(logRoot)) {
+            if (!bfs::exists(logRoot) && !bfs::create_directories(logRoot)) {
                 _log(logging::Level::Error) << "Setup failure: unable to create directory " << logRoot << std::endl;
                 return false;
             }
@@ -36,7 +36,7 @@ namespace spi
 
     private:
         logging::Logger _log{"log-manager", logging::Level::Debug};
-        fs::path _logRoot;
+        bfs::path _logRoot;
     };
 }
 

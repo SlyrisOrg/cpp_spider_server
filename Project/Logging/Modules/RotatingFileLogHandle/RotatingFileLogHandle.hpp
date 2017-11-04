@@ -9,7 +9,7 @@
 #include <boost/filesystem.hpp>
 #include <Logging/AbstractLogHandle.hpp>
 
-namespace fs = boost::filesystem;
+namespace bfs = boost::filesystem;
 
 namespace spi::log
 {
@@ -27,8 +27,8 @@ namespace spi::log
             unsigned long max = 0;
             bool looped = false;
 
-            fs::directory_iterator end;
-            for (fs::directory_iterator it(_handleDirectory); it != end; ++it) {
+            bfs::directory_iterator end;
+            for (bfs::directory_iterator it(_handleDirectory); it != end; ++it) {
                 try {
                     auto n = std::stoul(it->path().stem().string());
                     if (max <= n) {
@@ -52,7 +52,7 @@ namespace spi::log
             } else {
                 ++_fileNb;
             }
-            fs::path outPath = _handleDirectory / std::to_string(_fileNb).append(".log");
+            bfs::path outPath = _handleDirectory / std::to_string(_fileNb).append(".log");
             _out.open(outPath.string());
             _logSize = 0;
         }
@@ -83,11 +83,11 @@ namespace spi::log
 
         bool setup() noexcept override
         {
-            if (!fs::exists(_baseDirectory) && !fs::create_directories(_baseDirectory)) {
+            if (!bfs::exists(_baseDirectory) && !bfs::create_directories(_baseDirectory)) {
                 return false;
             }
 
-            if (!fs::exists(_handleDirectory) && !fs::create_directories(_handleDirectory)) {
+            if (!bfs::exists(_handleDirectory) && !bfs::create_directories(_handleDirectory)) {
                 return false;
             }
 
@@ -108,11 +108,16 @@ namespace spi::log
             _out.flush();
         }
 
+        static AbstractLogHandle *create() noexcept
+        {
+            return new RotatingFileLogHandle();
+        }
+
     private:
         static constexpr const unsigned long _logThreshold = 1024;
 
-        fs::path _baseDirectory;
-        fs::path _handleDirectory;
+        bfs::path _baseDirectory;
+        bfs::path _handleDirectory;
         unsigned long _logSize{0};
         unsigned long _fileNb{0};
         std::ofstream _out;
