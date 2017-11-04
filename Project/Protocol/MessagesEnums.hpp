@@ -29,6 +29,10 @@ namespace spi::proto
          RScreenshot
     );
 
+#ifdef USING_MSVC
+#include "Generated.hpp"
+#else
+
     ENUM(KeyCode,
          a, b, c, d, e,
          f, g, h, i, j,
@@ -56,8 +60,43 @@ namespace spi::proto
          Fn, Home, Alt, Space, AltGr,
          Left, Right, Up, Down,
          PageDown, PageUp,
-         Backspace, Delete
+         End, Start,
+         Inser,
+         Backspace, Delete,
+
+         Enter,
+
+         AcuteE, GraveE,
+         CedillaC, GraveA,
+         GraveU,
+
+         Comma, Semicolon, Colon,
+
+         Exclamation, Interrogation, Dot,
+
+         Slash, Backslash,
+         Underscore, Pipe,
+
+         Selection, Ampersand,
+         Tilde, Sharp,
+         Dollar, Euro, Pound, Currency,
+         Caret, Trema, Arobase,
+
+         Quote, DoubleQuote, BackQuote,
+         Inferior, Superior,
+
+         OpeningParenthesis, ClosingParenthesis,
+         OpeningBracket, ClosingBracket,
+         OpeningSquareBracket, ClosingSquareBracket,
+
+         Plus, Dash,
+         Star, Modulo, Equal,
+
+         Mu,
+
+         Round
     );
+#endif
 
     ENUM(KeyState, Up, Down);
 
