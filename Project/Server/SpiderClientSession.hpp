@@ -6,7 +6,7 @@
 #define SPIDER_SERVER_SPIDERCLIENTSESSION_HPP
 
 #include <Server/CommandableSession.hpp>
-#include <Logging/AbstractLogHandle.hpp>
+#include <Logging/LogModule.hpp>
 
 namespace spi
 {
@@ -15,7 +15,7 @@ namespace spi
     public:
         SpiderClientSession(net::IOManager &io, net::SSLContext &ctx,
                             const std::string &logRoot,
-                            AbstractLogHandle *handle) :
+                            LogModule *handle) :
             CommandableSession(io, ctx, "client-sessions"),
             _logHandle(handle),
             _commandConn(io, ctx)
@@ -118,7 +118,7 @@ namespace spi
         }
 
     private:
-        AbstractLogHandle *_logHandle;
+        LogModule *_logHandle;
         bool _identified{false};
         ::net::MACAddress _id;
 

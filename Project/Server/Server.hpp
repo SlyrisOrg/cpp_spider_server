@@ -13,7 +13,7 @@
 #include <Network/SSLContext.hpp>
 #include <Server/SpiderClientSession.hpp>
 #include <Server/ShellClientSession.hpp>
-#include <Logging/AbstractLogHandle.hpp>
+#include <Logging/LogModule.hpp>
 
 namespace asio = boost::asio;
 

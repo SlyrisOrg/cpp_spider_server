@@ -7,16 +7,16 @@
 
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <Logging/AbstractLogHandle.hpp>
+#include <Logging/LogModule.hpp>
 
 namespace bfs = boost::filesystem;
 
 namespace spi::log
 {
-    class RotatingFileLogHandle : public AbstractLogHandle
+    class RotatingFileLogModule : public LogModule
     {
     public:
-        ~RotatingFileLogHandle() noexcept override
+        ~RotatingFileLogModule() noexcept override
         {
             flush();
         }
@@ -108,9 +108,9 @@ namespace spi::log
             _out.flush();
         }
 
-        static AbstractLogHandle *create() noexcept
+        static LogModule *create() noexcept
         {
-            return new RotatingFileLogHandle();
+            return new RotatingFileLogModule();
         }
 
     private:

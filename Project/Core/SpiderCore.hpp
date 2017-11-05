@@ -10,7 +10,7 @@
 #include <Server/Server.hpp>
 #include <log/Logger.hpp>
 #include <lib/Lib.hpp>
-#include <Logging/Modules/RotatingFileLogHandle/RotatingFileLogHandle.hpp>
+#include <Logging/Modules/RotatingFileLogModule/RotatingFileLogModule.hpp>
 
 namespace spi
 {
@@ -34,15 +34,17 @@ namespace spi
         bool __loadLogModule(const std::string &name) noexcept
         {
             if (name == "default") {
-                _logCtor = &log::RotatingFileLogHandle::create;
+                _logCtor = &log::RotatingFileLogModule::create;
             } else {
                 _lib.load(name);
                 if (!_lib.isLoaded()) {
+                    _log(logging::Level::Error) << "Unable to load the log module" << std::endl;
                     return false;
                 }
                 try {
                     _logCtor = _lib.get<LogHandleConstructor>("create");
                 } catch (const lib::SymbolNotFound &e) {
+                    _log(logging::Level::Error) << "Unable to load a symbol from the log module" << std::endl;
                     return false;
                 }
             }

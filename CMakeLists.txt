@@ -22,8 +22,8 @@ endif ()
 enable_testing()
 include(CTest)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/RotatingFileLogHandle)
-add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/APIConnectedLogHandle)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/RotatingFileLogModule)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/APIConnectedLogModule)
 
 set(SOURCES_PROTOCOL
         Project/Protocol/MessagesEnums.hpp
@@ -33,7 +33,7 @@ set(SOURCES_PROTOCOL
 
 set(SOURCES_LOGGING
         Project/Logging/LogManager.hpp
-        Project/Logging/AbstractLogHandle.hpp
+        Project/Logging/LogModule.hpp
         )
 
 set(SOURCES_NETWORK
@@ -70,8 +70,8 @@ set(SOURCES_SPIDER
 
 add_executable(${PROJECT_NAME} ${SOURCES_SPIDER})
 
-add_dependencies(${PROJECT_NAME} RotatingFileLogHandle)
-add_dependencies(${PROJECT_NAME} APIConnectedLogHandle)
+add_dependencies(${PROJECT_NAME} RotatingFileLogModule)
+add_dependencies(${PROJECT_NAME} APIConnectedLogModule)
 include_directories(Project)
 #include_directories(vendor/core/Project/core-utils/project/)
 #include_directories(vendor/core/Project/core-network/project/)

@@ -12,11 +12,11 @@
 
 namespace spi
 {
-    class AbstractLogHandle : utils::NonCopyable
+    class LogModule : utils::NonCopyable
     {
     public:
 
-        virtual ~AbstractLogHandle() noexcept = default;
+        virtual ~LogModule() noexcept = default;
 
         /** Add an entry to the log */
         virtual void appendEntry(const ILoggable &l) = 0;
@@ -34,7 +34,7 @@ namespace spi
         virtual bool setup() noexcept = 0;
     };
 
-    using LogHandleConstructor = AbstractLogHandle *(*)();
+    using LogHandleConstructor = LogModule *(*)();
 }
 
 #endif //SPIDER_SERVER_ABSTRACTLOGHANDLER_HPP

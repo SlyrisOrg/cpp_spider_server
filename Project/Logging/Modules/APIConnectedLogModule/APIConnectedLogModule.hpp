@@ -7,13 +7,13 @@
 
 #include <string>
 #include <vector>
-#include <Logging/AbstractLogHandle.hpp>
+#include <Logging/LogModule.hpp>
 #include "API.hpp"
 
 
 namespace spi::log
 {
-    class APIConnectedLogHandle final : public AbstractLogHandle
+    class APIConnectedLogModule final : public LogModule
     {
     public:
         void appendEntry(const ILoggable &loggable) noexcept final
@@ -54,9 +54,9 @@ namespace spi::log
             return true;
         }
 
-        static AbstractLogHandle *create() noexcept
+        static LogModule *create() noexcept
         {
-            return new APIConnectedLogHandle();
+            return new APIConnectedLogModule();
         }
 
     private:
