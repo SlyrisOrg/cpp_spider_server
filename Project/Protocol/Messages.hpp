@@ -529,9 +529,11 @@ namespace spi::proto
     struct RListReply : public ILoggable
     {
         std::vector<::net::MACAddress> connectedClients;
-        uint32_t nbClients;
+        uint32_t nbClients{0};
 
         static constexpr const size_t SerializedSize = 4;
+
+        RListReply() noexcept = default;
 
         RListReply(const Buffer &buff) : nbClients(Serializer::unserializeInt(buff, 0))
         {

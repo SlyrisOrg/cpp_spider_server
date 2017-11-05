@@ -66,13 +66,13 @@ namespace spi::net
         }
 
         template <typename BufferT, typename CallBackT>
-        void asyncReadSome(const BufferT &buff, CallBackT &&cb) noexcept
+        void asyncReadSome(BufferT buff, CallBackT &&cb) noexcept
         {
             _socket.async_read_some(boost::asio::buffer(buff.data(), buff.size()), std::forward<CallBackT>(cb));
         }
 
         template <typename BufferT>
-        size_t readSome(const BufferT &buff, ErrorCode &ec) noexcept
+        size_t readSome(BufferT buff, ErrorCode &ec) noexcept
         {
             return _socket.read_some(boost::asio::buffer(buff.data(), buff.size()), ec.get());
         }
