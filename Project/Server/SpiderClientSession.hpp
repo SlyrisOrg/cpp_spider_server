@@ -13,6 +13,14 @@ namespace spi
     class SpiderClientSession : public CommandableSession
     {
     public:
+        using Pointer = boost::shared_ptr<SpiderClientSession>;
+
+        template <typename ...Args>
+        static auto createShared(Args &&...args)
+        {
+            return CommandableSession::create<SpiderClientSession>(std::forward<Args>(args)...);
+        }
+
         SpiderClientSession(net::IOManager &io, net::SSLContext &ctx,
                             const std::string &logRoot,
                             LogModule *handle) :
@@ -39,7 +47,7 @@ namespace spi
         {
             _log(logging::Level::Debug) << "Starting new session" << std::endl;
             asyncHandshake(net::SSLConnection::HandshakeType::Server,
-                           boost::bind(&SpiderClientSession::handleHandshake, this, net::ErrorPlaceholder));
+                           boost::bind(&SpiderClientSession::handleHandshake, shared_from_this_cast<SpiderClientSession>(), net::ErrorPlaceholder));
         }
 
     private:
@@ -65,7 +73,7 @@ namespace spi
             _identified = true;
             _logHandle->appendEntry(hello);
             _commandConn.asyncConnect(_conn.getRemoteAddress(), hello.port,
-                                      boost::bind(&SpiderClientSession::__handleCommandConnect, this,
+                                      boost::bind(&SpiderClientSession::__handleCommandConnect, shared_from_this_cast<SpiderClientSession>(),
                                                   spi::net::ErrorPlaceholder));
         }
 
@@ -86,10 +94,10 @@ namespace spi
         {
             if (!ec) {
                 _commandConn.asyncHandshake(net::SSLConnection::HandshakeType::Client,
-                                            boost::bind(&SpiderClientSession::__handleCommandSSLHandshake, this,
+                                            boost::bind(&SpiderClientSession::__handleCommandSSLHandshake, shared_from_this_cast<SpiderClientSession>(),
                                                         net::ErrorPlaceholder));
             } else {
-                _log(logging::Level::Warning) << "Unable to obtain a command channel with client"
+                _log(logging::Level::Warning) << "Unable to obtain a command channel with client: "
                                               << ec.message() << std::endl;
             }
         }

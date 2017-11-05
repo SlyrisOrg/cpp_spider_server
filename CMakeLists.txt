@@ -24,6 +24,7 @@ include(CTest)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/RotatingFileLogModule)
 add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/APIConnectedLogModule)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Project/Logging/Modules/JSONFileLogModule)
 
 set(SOURCES_PROTOCOL
         Project/Protocol/MessagesEnums.hpp
@@ -72,6 +73,7 @@ add_executable(${PROJECT_NAME} ${SOURCES_SPIDER})
 
 add_dependencies(${PROJECT_NAME} RotatingFileLogModule)
 add_dependencies(${PROJECT_NAME} APIConnectedLogModule)
+add_dependencies(${PROJECT_NAME} JSONFileLogModule)
 include_directories(Project)
 #include_directories(vendor/core/Project/core-utils/project/)
 #include_directories(vendor/core/Project/core-network/project/)

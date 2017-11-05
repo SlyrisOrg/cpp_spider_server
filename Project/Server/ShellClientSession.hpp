@@ -14,7 +14,16 @@ namespace spi
     class ShellClientSession : public CommandableSession
     {
     public:
-        ShellClientSession(net::IOManager &io, net::SSLContext &ctx, const std::vector<SpiderClientSession *> &clts) :
+        using Pointer = boost::shared_ptr<ShellClientSession>;
+
+        template <typename ...Args>
+        static auto createShared(Args &&...args)
+        {
+            return CommandableSession::create<ShellClientSession>(std::forward<Args>(args)...);
+        }
+
+        ShellClientSession(net::IOManager &io, net::SSLContext &ctx,
+                           const std::vector<SpiderClientSession::Pointer> &clts) :
             CommandableSession(io, ctx, "shell-session"), _clients(clts)
         {
             _cmdHandler.onMessages(boost::bind(&ShellClientSession::sendList, this, _1), proto::MessageType::RList);
@@ -26,9 +35,7 @@ namespace spi
                                    proto::MessageType::RScreenshot);
         }
 
-        virtual ~ShellClientSession() noexcept
-        {
-        }
+        virtual ~ShellClientSession() noexcept = default;
 
         void startSession() noexcept
         {
@@ -39,10 +46,10 @@ namespace spi
     private:
         SpiderClientSession *__findClient(const ::net::MACAddress &id)
         {
-            auto it = std::find_if(_clients.begin(), _clients.end(), [&id](SpiderClientSession *cur) {
+            auto it = std::find_if(_clients.begin(), _clients.end(), [&id](const SpiderClientSession::Pointer &cur) {
                 return cur->getID() == id;
             });
-            return it != _clients.end() ? *it : nullptr;
+            return it != _clients.end() ? it->get() : nullptr;
         }
 
         template <typename RequestT, typename MessageT>
@@ -118,7 +125,7 @@ namespace spi
         }
 
     private:
-        const std::vector<SpiderClientSession *> &_clients;
+        const std::vector<SpiderClientSession::Pointer> &_clients;
     };
 }
 

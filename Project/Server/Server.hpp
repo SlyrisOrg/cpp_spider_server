@@ -21,6 +21,9 @@ namespace spi
 {
     class Server
     {
+        using SpiderClientSessionPtr = boost::shared_ptr<SpiderClientSession>;
+        using ShellClientSessionPtr = boost::shared_ptr<ShellClientSession>;
+
     public:
         Server() noexcept : _ctx(net::SSLContext::Version::SSLv23),
                             _clientsAcceptor(_ioMgr), _rshAcceptor(_ioMgr),
@@ -28,14 +31,7 @@ namespace spi
         {
         }
 
-        virtual ~Server() noexcept
-        {
-            for (auto &cur : _clients) {
-                delete cur;
-            }
-            delete _nextSession;
-            delete _shellSession;
-        }
+        virtual ~Server() noexcept = default;
 
         bool setup(unsigned short port, unsigned short shellPort,
                    const std::string &certFile, const std::string &keyFile,
@@ -61,7 +57,7 @@ namespace spi
         }
 
     private:
-        void __addClient(SpiderClientSession *clt) noexcept
+        void __addClient(const SpiderClientSessionPtr &clt) noexcept
         {
             _clients.push_back(clt);
         }
@@ -70,19 +66,19 @@ namespace spi
         {
             auto *spiClt = static_cast<SpiderClientSession *>(clt);
 
+            spiClt->connection().rawSocket().close();
             _clients.erase(std::remove_if(_clients.begin(), _clients.end(), [spiClt](const auto &cur) {
-                return cur == spiClt;
+                return cur.get() == spiClt;
             }));
-            delete spiClt;
         }
 
-        void __removeRemoteShell(CommandableSession *clt)
+        void __removeRemoteShell([[maybe_unused]] CommandableSession *clt)
         {
-            delete clt;
+            _shellSession.reset();
             __setupRshAcceptor();
         }
 
-        void __onClientAccept(SpiderClientSession *sess, const ErrorCode &ec)
+        void __onClientAccept(SpiderClientSessionPtr sess, const ErrorCode &ec)
         {
             if (!ec) {
                 _log(logging::Level::Debug) << "Got a new connection" << std::endl;
@@ -90,7 +86,7 @@ namespace spi
                 __addClient(sess);
                 sess->onError(boost::bind(&Server::__removeClient, this, _1));
             } else {
-                delete sess;
+                _nextSession.reset();
             }
             __setupClientAcceptor();
         }
@@ -101,13 +97,13 @@ namespace spi
                 _log(logging::Level::Info) << "Remote shell connected" << std::endl;
                 _shellSession->startSession();
             } else {
-                delete _shellSession; //Will call the cleanup function, which will restart the acceptor
+                __removeRemoteShell(nullptr);
             }
         }
 
         void __setupClientAcceptor()
         {
-            _nextSession = new SpiderClientSession(_ioMgr, _ctx, _logRoot, _logCtor());
+            _nextSession = SpiderClientSession::createShared(_ioMgr, _ctx, _logRoot, _logCtor());
 
             _clientsAcceptor.onAccept(_nextSession->connection(),
                                       boost::bind(&Server::__onClientAccept, this, _nextSession,
@@ -116,7 +112,7 @@ namespace spi
 
         void __setupRshAcceptor()
         {
-            _shellSession = new ShellClientSession(_ioMgr, _ctx, _clients);
+            _shellSession = ShellClientSession::createShared(_ioMgr, _ctx, _clients);
 
             _shellSession->onError(boost::bind(&Server::__removeRemoteShell, this, _1));
             _rshAcceptor.onAccept(_shellSession->connection(),
@@ -150,10 +146,10 @@ namespace spi
         net::TCPAcceptor _clientsAcceptor;
         net::TCPAcceptor _rshAcceptor;
 
-        SpiderClientSession *_nextSession{nullptr};
-        std::vector<SpiderClientSession *> _clients;
+        SpiderClientSession::Pointer _nextSession{nullptr};
+        std::vector<SpiderClientSession::Pointer> _clients;
 
-        ShellClientSession *_shellSession{nullptr};
+        ShellClientSession::Pointer _shellSession{nullptr};
 
         std::string _logRoot;
 
