@@ -92,13 +92,15 @@ namespace spi::proto
 
     struct RawData : public ILoggable
     {
+        static constexpr const size_t SerializedSize = 4;
+
         std::vector<Byte> bytes;
 
         RawData() = default;
 
-        RawData(const Buffer &buff)
+        explicit RawData(const Buffer &buff)
         {
-            bytes = Serializer::unserializeBuff(buff, 0);
+            bytes.resize(Serializer::unserializeInt(buff, 0));
         }
 
         void serialize(Buffer &out) const noexcept override
@@ -374,13 +376,15 @@ namespace spi::proto
 
     struct ImageData : public ILoggable
     {
+        static constexpr const size_t SerializedSize = 4;
+
         std::vector<Byte> bytes;
 
         ImageData() = default;
 
-        ImageData(const Buffer &buff)
+        explicit ImageData(const Buffer &buff)
         {
-            bytes = Serializer::unserializeBuff(buff, 0);
+            bytes.resize(Serializer::unserializeInt(buff, 0));
         }
 
         void serialize(Buffer &out) const noexcept override
@@ -525,8 +529,13 @@ namespace spi::proto
     struct RListReply : public ILoggable
     {
         std::vector<::net::MACAddress> connectedClients;
+        uint32_t nbClients;
 
         static constexpr const size_t SerializedSize = 4;
+
+        RListReply(const Buffer &buff) : nbClients(Serializer::unserializeInt(buff, 0))
+        {
+        }
 
         void serialize(Buffer &out) const noexcept override
         {

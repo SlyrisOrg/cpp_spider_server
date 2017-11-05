@@ -35,7 +35,6 @@ namespace spi
         }
 
         static constexpr const size_t invalidSize = static_cast<size_t>(-1);
-        static constexpr const size_t varyingSize = static_cast<size_t>(0);
 
         size_t getSerializedSize(proto::MessageType type) const noexcept
         {
@@ -53,8 +52,9 @@ namespace spi
                 case proto::MessageType::MouseMove:
                     return proto::MouseMove::SerializedSize;
                 case proto::MessageType::RawData:
+                    return proto::RawData::SerializedSize;
                 case proto::MessageType::ImageData:
-                    return varyingSize;
+                    return proto::ImageData::SerializedSize;
                 case proto::MessageType::Screenshot:
                     return proto::Screenshot::SerializedSize;
                 case proto::MessageType::StealthMode:
@@ -111,8 +111,8 @@ namespace spi
                 _cbs[type](bye);
             }},
             {
-                proto::MessageType::RawData, [&](proto::MessageType type, [[maybe_unused]] const Buffer &) {
-                proto::RawData rd;
+                proto::MessageType::RawData, [&](proto::MessageType type, const Buffer &v) {
+                proto::RawData rd(v);
 
                 _cbs[type](rd);
             }},
@@ -141,8 +141,8 @@ namespace spi
                 _cbs[type](mm);
             }},
             {
-                proto::MessageType::ImageData, [&](proto::MessageType type, [[maybe_unused]] const Buffer &) {
-                proto::ImageData img;
+                proto::MessageType::ImageData, [&](proto::MessageType type, const Buffer &v) {
+                proto::ImageData img(v);
 
                 _cbs[type](img);
             }},
@@ -171,8 +171,8 @@ namespace spi
                 _cbs[type](rl);
             }},
             {
-                proto::MessageType::RListReply, [&](proto::MessageType type, [[maybe_unused]] const Buffer &) {
-                proto::RListReply rlr;
+                proto::MessageType::RListReply, [&](proto::MessageType type, const Buffer &v) {
+                proto::RListReply rlr(v);
 
                 _cbs[type](rlr);
             }},
