@@ -2,8 +2,8 @@
 // Created by doom on 29/09/17.
 //
 
-#ifndef SPIDER_LOG_ROTATINGFILELOGHANDLE_HPP
-#define SPIDER_LOG_ROTATINGFILELOGHANDLE_HPP
+#ifndef SPIDER_LOG_JSONFILELOGHANDLE_HPP
+#define SPIDER_LOG_JSONFILELOGHANDLE_HPP
 
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -13,12 +13,15 @@ namespace bfs = boost::filesystem;
 
 namespace spi::log
 {
-    class RotatingFileLogModule : public LogModule
+    class JSONFileLogModule : public LogModule
     {
     public:
-        ~RotatingFileLogModule() noexcept override
+        ~JSONFileLogModule() noexcept override
         {
-            flush();
+            if (_out.is_open()) {
+                _out << "]}" << std::endl;
+                flush();
+            }
         }
 
     private:
@@ -44,6 +47,7 @@ namespace spi::log
         void __rotate() noexcept
         {
             if (_out.is_open()) {
+                _out << std::endl << "]}" << std::endl;
                 flush();
                 _out.close();
             }
@@ -54,6 +58,7 @@ namespace spi::log
             }
             bfs::path outPath = _handleDirectory / std::to_string(_fileNb).append(".log");
             _out.open(outPath.string());
+            _out << "{ \"events\": [" << std::endl;
             _logSize = 0;
         }
 
@@ -97,10 +102,13 @@ namespace spi::log
 
         void appendEntry(const ILoggable &loggable) noexcept override
         {
-            if (++_logSize > _logThreshold) {
+            if (_logSize > _logThreshold) {
                 __rotate();
             }
-            _out << loggable.stringify() << std::endl;
+            if (_logSize++ > 0) {
+                _out << ", " << std::endl;
+            }
+            _out << loggable.JSONify();
         }
 
         void flush() noexcept override
@@ -110,7 +118,7 @@ namespace spi::log
 
         static LogModule *create() noexcept
         {
-            return new RotatingFileLogModule();
+            return new JSONFileLogModule();
         }
 
     private:
@@ -124,4 +132,4 @@ namespace spi::log
     };
 }
 
-#endif //SPIDER_LOG_ROTATINGFILELOGHANDLE_HPP
+#endif //SPIDER_LOG_JSONFILELOGHANDLE_HPP
