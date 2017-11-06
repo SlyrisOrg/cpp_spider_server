@@ -71,6 +71,8 @@ namespace spi
                     return proto::RActiveMode::SerializedSize;
                 case proto::MessageType::RScreenshot:
                     return proto::RScreenshot::SerializedSize;
+                case proto::MessageType::WindowChange:
+                    return proto::WindowChanged::SerializedSize;
                 default:
                     return invalidSize;
             }
@@ -84,11 +86,23 @@ namespace spi
         using HandlerT = std::function<void(proto::MessageType, const Buffer &)>;
         using MessageCallbackT = std::function<void(const ILoggable &)>;
 
+#ifdef USING_MSVC
+        template <typename T>
+        void onMessages(const MessageCallbackT &cb, T t) noexcept
+        {
+            _cbs.emplace((proto::MessageType::EnumType)t, cb);
+        }
+#endif
+
         template <typename T, typename ...Args>
         void onMessages(const MessageCallbackT &cb, T t, Args ...types) noexcept
         {
             _cbs.emplace((proto::MessageType::EnumType)t, cb);
+#ifdef USING_MSVC
+            onMessages(cb, types...);
+#else
             (_cbs.emplace((proto::MessageType::EnumType)types, cb), ...);
+#endif
         }
 
         void handleBinaryCommand(proto::MessageType type, const Buffer &v)
@@ -191,6 +205,12 @@ namespace spi
             {
                 proto::MessageType::RScreenshot, [&](proto::MessageType type, const Buffer &v) {
                 proto::RScreenshot rep(v);
+
+                _cbs[type](rep);
+            }},
+            {
+                proto::MessageType::WindowChange, [&](proto::MessageType type, const Buffer &v) {
+                proto::WindowChanged rep(v);
 
                 _cbs[type](rep);
             }},

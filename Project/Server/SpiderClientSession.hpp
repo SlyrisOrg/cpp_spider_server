@@ -33,6 +33,8 @@ namespace spi
                                    proto::MessageType::MouseMove,
                                    proto::MessageType::KeyEvent,
                                    proto::MessageType::ReplyCode);
+            _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__handleWindowChange, this, _1),
+                                   proto::MessageType::WindowChange);
             _cmdHandler.onMessages(boost::bind(&SpiderClientSession::__handleHello, this, _1),
                                    proto::MessageType::Hello);
             _logHandle->setRoot(logRoot);
@@ -47,7 +49,8 @@ namespace spi
         {
             _log(logging::Level::Debug) << "Starting new session" << std::endl;
             asyncHandshake(net::SSLConnection::HandshakeType::Server,
-                           boost::bind(&SpiderClientSession::handleHandshake, shared_from_this_cast<SpiderClientSession>(), net::ErrorPlaceholder));
+                           boost::bind(&SpiderClientSession::handleHandshake,
+                                       shared_from_this_cast<SpiderClientSession>(), net::ErrorPlaceholder));
         }
 
     private:
@@ -59,6 +62,23 @@ namespace spi
                 _log(logging::Level::Debug) << l.stringify() << std::endl;
                 _logHandle->appendEntry(l);
             }
+        }
+
+        void __handleWindowChange(const ILoggable &l)
+        {
+            proto::WindowChanged wc = static_cast<const proto::WindowChanged &>(l);
+
+            size_t len = wc.windowName.size();
+
+            Buffer buff;
+            buff.resize(len);
+
+            ErrorCode ec;
+            _conn.readSome(net::BufferView(buff.data(), buff.size()), ec);
+
+            wc.windowName = Serializer::unserializeString(buff, 0, len);
+            _log(logging::Level::Debug) << wc.stringify() << std::endl;
+            _logHandle->appendEntry(wc);
         }
 
         void __handleHello(const ILoggable &l)
@@ -73,7 +93,8 @@ namespace spi
             _identified = true;
             _logHandle->appendEntry(hello);
             _commandConn.asyncConnect(_conn.getRemoteAddress(), hello.port,
-                                      boost::bind(&SpiderClientSession::__handleCommandConnect, shared_from_this_cast<SpiderClientSession>(),
+                                      boost::bind(&SpiderClientSession::__handleCommandConnect,
+                                                  shared_from_this_cast<SpiderClientSession>(),
                                                   spi::net::ErrorPlaceholder));
         }
 
@@ -94,7 +115,8 @@ namespace spi
         {
             if (!ec) {
                 _commandConn.asyncHandshake(net::SSLConnection::HandshakeType::Client,
-                                            boost::bind(&SpiderClientSession::__handleCommandSSLHandshake, shared_from_this_cast<SpiderClientSession>(),
+                                            boost::bind(&SpiderClientSession::__handleCommandSSLHandshake,
+                                                        shared_from_this_cast<SpiderClientSession>(),
                                                         net::ErrorPlaceholder));
             } else {
                 _log(logging::Level::Warning) << "Unable to obtain a command channel with client: "

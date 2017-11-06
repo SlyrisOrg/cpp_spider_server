@@ -144,6 +144,16 @@ namespace spi
 
             return unserializeBytes(v, startPos + sizeof(uint32_t), size);
         }
+
+        static std::string unserializeString(const Buffer &v, size_t startPos, size_t size)
+        {
+            if (unlikely(v.size() - startPos < size)) {
+                throw UnserializationError();
+            }
+
+            std::string ret{v.begin() + startPos, v.end()};
+            return ret;
+        }
     };
 }
 
