@@ -561,10 +561,29 @@ namespace spi::proto
             return "[RList] replying with a list of clients";
         }
 
+    private:
+        std::string __buildJSONArray() const noexcept
+        {
+            std::stringstream ss;
+
+            ss << "[ ";
+            std::for_each(connectedClients.begin(), connectedClients.end(), [this, &ss](const ::net::MACAddress &mac) {
+                if (mac != connectedClients.front()) {
+                    ss << ", ";
+                }
+                ss << "\"" << mac.toString() << "\"";
+            });
+            ss << " ]";
+            return ss.str();
+        }
+
+    public:
         std::string JSONify() const noexcept override
         {
             return utils::unpackToString("{ ",
                                          "\"type\": ", JSON::quote(MessageType::toString(MessageType::RListReply)),
+                                         ", ",
+                                         "\"clients\": ", __buildJSONArray(),
                                          " }");
         }
     };
