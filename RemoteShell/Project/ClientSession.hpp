@@ -14,6 +14,16 @@
 #include <Network/BufferView.hpp>
 #include "PosixStream.hpp"
 #include "SyncCommandableSession.hpp"
+#include "Client.hpp"
+
+namespace sh
+{
+    struct Config
+    {
+        std::string address;
+        unsigned short port;
+    };
+}
 
 namespace sh
 {
@@ -33,8 +43,10 @@ namespace sh
                                    spi::proto::MessageType::ReplyCode);
         }
 
-        void setup()
+        void setup(const sh::Config &cfg)
         {
+            _address = cfg.address;
+            _port = cfg.port;
             __setupCallbacks();
         }
 
@@ -61,7 +73,7 @@ namespace sh
 
         void __connect() noexcept
         {
-            auto ec = _conn.connect("10.41.171.235", 31338);
+            auto ec = _conn.connect(_address, _port);
             __checkErrorCode(ec, "Connected");
         }
 
@@ -263,6 +275,8 @@ namespace sh
         spi::net::PosixStream _interractive{_mgr, ::dup(STDIN_FILENO)};
         boost::asio::streambuf _buff;
         utils::CLI _cli;
+        unsigned short _port;
+        std::string _address;
     };
 }
 
