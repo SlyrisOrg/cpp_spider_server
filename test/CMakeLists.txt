@@ -27,7 +27,7 @@ endif (MSVC)
 
 ########################################################################################################################
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/vendor/googletest bin)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/vendor/googletest bin)
 include_directories(${CMAKE_SOURCE_DIR}/vendor/googletest/include/googletest/include)
 include_directories(${CMAKE_SOURCE_DIR}/vendor/googletest/googlemock/include)
 
@@ -61,4 +61,4 @@ macro(add_test_core NAME_TEST NAME_EXECUTABLE SOURCE)
 endmacro()
 
 ########################################################################################################################
-add_subdirectory(server-test)
+add_subdirectory(serializer)

@@ -64,19 +64,8 @@ namespace spi
             }
         }
 
-        void __handleWindowChange(const ILoggable &l)
+        void __handleWindowChange(const ILoggable &wc)
         {
-            proto::WindowChanged wc = static_cast<const proto::WindowChanged &>(l);
-
-            size_t len = wc.windowName.size();
-
-            Buffer buff;
-            buff.resize(len);
-
-            ErrorCode ec;
-            _conn.readSome(net::BufferView(buff.data(), buff.size()), ec);
-
-            wc.windowName = Serializer::unserializeString(buff, 0, len);
             _log(logging::Level::Debug) << wc.stringify() << std::endl;
             _logHandle->appendEntry(wc);
         }
@@ -129,13 +118,18 @@ namespace spi
         {
             Buffer buff;
 
-            l.serializeTypeInfo(buff);
             l.serialize(buff);
             _commandConn.writeSome(buff, ec);
             if (ec) {
                 _log(logging::Level::Warning) << "Unable to send command to client: " << ec.message() << std::endl;
             }
         }
+
+//        template <typename BufferT, typename CallbackT>
+//        void asyncReceiveCommand(BufferT &&buff, CallbackT &&cb)
+//        {
+//            _commandConn.asyncReadSome(std::forward<BufferT>(buff), std::forward<CallbackT>(cb));
+//        }
 
         bool hasCommandConn() const noexcept
         {

