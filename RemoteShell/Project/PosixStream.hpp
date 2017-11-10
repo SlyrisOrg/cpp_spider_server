@@ -27,17 +27,22 @@ namespace spi::net
             boost::asio::async_read_until(_input, buff, '\n', std::forward<CB>(ct));
         }
 
-        ErrorCode readLine(boost::asio::streambuf &buff) noexcept
+        ErrorCode readLine(std::string &out) noexcept
         {
-            boost::system::error_code ec;
-            boost::asio::read_until(_input, buff, '\n', ec);
+            ErrorCode ec;
+
+            boost::asio::streambuf buff;
+            boost::asio::read_until(_input, buff, '\n', ec.get());
+
+            if (!ec) {
+                out = std::string(std::istreambuf_iterator<char>(&buff), std::istreambuf_iterator<char>());
+            }
             return ec;
         }
 
         template <typename Buffer, typename CB>
         void asyncRead(Buffer &buff, CB &&ct)
         {
-
             _input.async_read_some(boost::asio::buffer(buff.data(), buff.size()), std::forward<CB>(ct));
         }
 

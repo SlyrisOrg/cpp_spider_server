@@ -36,87 +36,40 @@ namespace spi
 
     protected:
         /** Command reading / handling */
-        void runCommand(ErrorCode &ec) noexcept
+        void getResult(ErrorCode &ec) noexcept
         {
-            __readCommandHeader(ec);
-            _readBuff.clear();
+            auto buf = __readSize(Serializable::MetaDataSize, ec);
+            if (!ec) {
+                auto size = Serializer::unserializeInt(buf, 0);
+                buf = __readSize(size, ec);
+                auto type = _cmdHandler.identifyMessage(buf);
+                if (type == proto::MessageType::Unknown) {
+                    _log(logging::Warning) << "Ignoring unrecognized command" << std::endl;
+                }
+                _cmdHandler.handleBinaryCommand(type, buf);
+            }
         }
 
     private:
-
-        size_t __readData(ErrorCode &ec) noexcept
+        Buffer __readSize(size_t wantedSize, ErrorCode &ec) noexcept
         {
-            return _conn.readSome(net::BufferView(_readBuff.data() + _nbReadBytes, _readBuff.size() - _nbReadBytes),
-                                  ec);
-        }
+            Buffer ret;
+            size_t readBytes = 0;
+            ret.resize(wantedSize);
 
-        void __handleCommand(ErrorCode &code) noexcept
-        {
-            while (_nbReadBytes < _expectedSize) {
-                _nbReadBytes += __readData(code);
-                if (code) {
-                    _log(logging::Level::Warning) << code.message() << std::endl;
-                    return;
-                }
+            while (readBytes < wantedSize) {
+                auto nb = _conn.readSome(net::BufferView(ret.data() + readBytes, ret.size() - readBytes), ec);
+                if (ec)
+                    break;
+                readBytes += nb;
             }
-            _cmdHandler.handleBinaryCommand(_nextCmdType, _readBuff);
-        }
-
-        void __readCommandBody(proto::MessageType type, size_t size, ErrorCode &code)
-        {
-            _nextCmdType = type;
-            _nbReadBytes = 0;
-            _expectedSize = size;
-            _readBuff.resize(size);
-            __handleCommand(code);
-        }
-
-        void __handleCommandType(proto::MessageType type, ErrorCode &ec)
-        {
-            size_t size;
-
-            if (!_cmdHandler.canHandleCommand(type)) {
-                return;
-            } else if ((size = _cmdHandler.getSerializedSize(type)) == 0) {
-                _cmdHandler.handleBinaryCommand(type, Buffer());
-            } else {
-                __readCommandBody(type, size, ec);
-            }
-        }
-
-        void __handleCommandHeader(ErrorCode &ec)
-        {
-            while (_nbReadBytes < _expectedSize) {
-                _nbReadBytes += __readData(ec);
-                if (ec) {
-                    _log(logging::Level::Warning) << ec.message() << std::endl;
-                    return;
-                }
-            }
-            auto type = _cmdHandler.identifyMessage(_readBuff);
-            if (type == spi::proto::MessageType::Unknown) {
-                _log(logging::Level::Warning) << "Ignoring unrecognized command : " << type.toString() << std::endl;
-            } else {
-                __handleCommandType(type, ec);
-            }
-        }
-
-        void __readCommandHeader(ErrorCode &ec) noexcept
-        {
-            _nbReadBytes = 0;
-            _expectedSize = 4;
-            _readBuff.resize(4);
-            __handleCommandHeader(ec);
+            return ret;
         }
 
     protected:
         net::SSLConnection _conn;
         logging::Logger _log;
         CommandHandler _cmdHandler;
-        Buffer _readBuff;
-        size_t _nbReadBytes{0};
-        size_t _expectedSize{0};
-        proto::MessageType _nextCmdType{proto::MessageType::Unknown};
     };
 }
 

