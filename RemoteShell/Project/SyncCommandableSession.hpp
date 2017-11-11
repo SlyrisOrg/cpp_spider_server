@@ -38,32 +38,22 @@ namespace spi
         /** Command reading / handling */
         void getResult(ErrorCode &ec) noexcept
         {
-            auto buf = __readSize(Serializable::MetaDataSize, ec);
+            Buffer buf;
+            buf.resize(Serializable::MetaDataSize);
+            _conn.readSize(net::BufferView(buf.data(), buf.size()), ec);
+
             if (!ec) {
                 auto size = Serializer::unserializeInt(buf, 0);
-                buf = __readSize(size, ec);
-                auto type = _cmdHandler.identifyMessage(buf);
-                if (type == proto::MessageType::Unknown) {
-                    _log(logging::Warning) << "Ignoring unrecognized command" << std::endl;
+                buf.resize(size);
+                _conn.readSize(net::BufferView(buf.data(), buf.size()), ec);
+                if (!ec) {
+                    auto type = _cmdHandler.identifyMessage(buf);
+                    if (type == proto::MessageType::Unknown) {
+                        _log(logging::Warning) << "Ignoring unrecognized command" << std::endl;
+                    }
+                    _cmdHandler.handleBinaryCommand(type, buf);
                 }
-                _cmdHandler.handleBinaryCommand(type, buf);
             }
-        }
-
-    private:
-        Buffer __readSize(size_t wantedSize, ErrorCode &ec) noexcept
-        {
-            Buffer ret;
-            size_t readBytes = 0;
-            ret.resize(wantedSize);
-
-            while (readBytes < wantedSize) {
-                auto nb = _conn.readSome(net::BufferView(ret.data() + readBytes, ret.size() - readBytes), ec);
-                if (ec)
-                    break;
-                readBytes += nb;
-            }
-            return ret;
         }
 
     protected:
