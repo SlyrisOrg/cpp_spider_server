@@ -19,8 +19,6 @@ namespace spi
 
         static pplx::task<void> addRequest(const web::json::value &value)
         {
-//            std::cout << __PRETTY_FUNCTION__ << std::endl;
-//            std::cout << value.serialize().c_str() << std::endl;
             web::http::client::http_client client(U(apiHost + "log"));
             web::http::http_request request;
             request.set_method(web::http::methods::POST);
@@ -31,8 +29,7 @@ namespace spi
                     if (response.status_code() == web::http::status_codes::OK) {
                         return response.extract_json();
                     }
-                }
-                catch (const web::http::http_exception &error) {
+                } catch (const web::http::http_exception &error) {
                     std::cerr << error.what() << std::endl;
                 }
                 return pplx::task_from_result(web::json::value());
@@ -44,8 +41,7 @@ namespace spi
                     }
                     web::json::value obj = previousTask.get();
                     std::cout << obj.serialize().c_str() << std::endl;
-                }
-                catch (const web::http::http_exception &e) {
+                } catch (const web::http::http_exception &e) {
                     std::cerr << e.what() << std::endl;
                 }
             });

@@ -31,7 +31,6 @@ namespace spi::log
             web::json::value v;
 
             v[U("logs")] = std::move(web::json::value::array(_values));
-            std::cout << v.serialize() << std::endl;
             API::addRequest(v).wait();
             _values.clear();
         }
