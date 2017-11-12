@@ -175,7 +175,8 @@ namespace sh
             const proto::RawData &rd = static_cast<const proto::RawData &>(l);
 
             std::string output(rd.bytes.begin(), rd.bytes.end());
-            std::cout << "Data: " << output << ", " << rd.bytes.size() << std::endl;
+            std::cout << "Size: " << rd.bytes.size() << std::endl;
+            std::cout << "Data: " << std::endl << output << std::endl;
         }
 
         std::string __screenshot(utils::CLI::commandArg &&arg)

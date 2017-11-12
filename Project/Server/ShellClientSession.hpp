@@ -137,43 +137,63 @@ namespace spi
                 ErrorCode ec;
                 ptr->sendCommand(rsh, ec);
                 if (!ec) {
-//                    _asyncCmdBuff.resize(proto::MessageHeaderSize + proto::RawData::SerializedSize);
-//                    ptr->asyncReceiveCommand(net::BufferView(_asyncCmdBuff.data(), _asyncCmdBuff.size()),
-//                                             boost::bind(&ShellClientSession::__asyncHandleRawData,
-//                                                         shared_from_this_cast<ShellClientSession>(), ptr, _1));
+                    auto &cmdConn = ptr->getCommandConn();
+
+                    _clientCmdBuff.resize(Serializable::MetaDataSize);
+                    cmdConn.asyncReadSize(net::BufferView(_clientCmdBuff.data(), _clientCmdBuff.size()),
+                                          boost::protect(boost::bind(&ShellClientSession::__handleRedirCmdSize,
+                                                                     shared_from_this_cast<ShellClientSession>(),
+                                                                     ptr, net::ErrorPlaceholder)));
                 } else
                     __replyError();
             } else
                 __replyError();
         }
 
-//        void __asyncHandleRawData(SpiderClientSession *cli, const ErrorCode &err)
-//        {
-//            if (!err) {
-//                auto type = _cmdHandler.identifyMessage(_asyncCmdBuff);
-//
-//                if (type != proto::MessageType::RawData
-//                    || _asyncCmdBuff.size() != proto::MessageHeaderSize + proto::RawData::SerializedSize) {
-//                    __replyError();
-//                    return;
-//                }
-//
-//                _asyncCmdBuff.erase(_asyncCmdBuff.begin(), _asyncCmdBuff.begin() + 4);
-//                proto::RawData rd(_asyncCmdBuff);
-//
-//                Buffer buff(rd.bytes.size());
-//                ErrorCode ec;
-//                cli->connection().readSome(net::BufferView(buff.data(), buff.size()), ec);
-//
-//                rd.bytes = spi::Serializer::unserializeBytes(buff, 0, buff.size());
-//                std::string output(rd.bytes.begin(), rd.bytes.end());
-//                std::cout << "Command output: " << output << ", " << rd.bytes.size() << std::endl;
-//                sendCommand(rd, ec);
-//                std::cout << "SENT" << std::endl;
-//                if (ec)
-//                    _errorCb(this);
-//            }
-//        }
+        /** Redirections: transmitting client responses back to the remote shell */
+
+        void __handleRedirCmdSize(SpiderClientSession *ptr, const ErrorCode &ec)
+        {
+            if (!ec) {
+                auto size = Serializer::unserializeInt(_clientCmdBuff, 0);
+                std::cout << size << std::endl;
+                _clientCmdBuff.resize(size);
+                auto &cmdConn = ptr->getCommandConn();
+                cmdConn.asyncReadSize(net::BufferView(_clientCmdBuff.data(), _clientCmdBuff.size()),
+                                      boost::protect(boost::bind(&ShellClientSession::__handleRedirCmdData, this,
+                                                                 net::ErrorPlaceholder)));
+            } else {
+                _log(logging::Level::Warning) << "Unable to read command header from client : "
+                                              << ec.message() << std::endl;
+                __replyError();
+            }
+        }
+
+        void __handleRedirCmdData(const ErrorCode &ec)
+        {
+            if (ec) {
+                _log(logging::Level::Warning) << "Unable to read command data from client" << ec.message() << std::endl;
+                __replyError();
+                return;
+            }
+            auto type = _cmdHandler.identifyMessage(_clientCmdBuff);
+            if (type != proto::MessageType::Unknown) {
+                Buffer sendBuf;
+
+                Serializer::serializeInt(sendBuf, static_cast<uint32_t>(_clientCmdBuff.size()));
+                sendBuf.insert(sendBuf.end(), _clientCmdBuff.begin(), _clientCmdBuff.end());
+
+                ErrorCode sec;
+                _conn.writeSome(sendBuf, sec);
+                if (sec) {
+                    _log(logging::Level::Warning) << "Unable to transmit data to the remote shell" << std::endl;
+                    _errorCb(this);
+                }
+            } else {
+                _log(logging::Level::Warning) << "Ignoring unrecognized command" << std::endl;
+                __replyError();
+            }
+        }
 
     public:
         void sendCommand(const ILoggable &l, ErrorCode &ec) noexcept
@@ -186,7 +206,7 @@ namespace spi
 
     private:
         const std::vector<SpiderClientSession::Pointer> &_clients;
-        Buffer _asyncCmdBuff;
+        Buffer _clientCmdBuff;
     };
 }
 

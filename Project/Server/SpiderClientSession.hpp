@@ -125,15 +125,14 @@ namespace spi
             }
         }
 
-//        template <typename BufferT, typename CallbackT>
-//        void asyncReceiveCommand(BufferT &&buff, CallbackT &&cb)
-//        {
-//            _commandConn.asyncReadSome(std::forward<BufferT>(buff), std::forward<CallbackT>(cb));
-//        }
-
         bool hasCommandConn() const noexcept
         {
             return _hasCommandConn;
+        }
+
+        net::SSLConnection &getCommandConn() noexcept
+        {
+            return _commandConn;
         }
 
         const ::net::MACAddress getID() const noexcept
