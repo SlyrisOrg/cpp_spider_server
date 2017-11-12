@@ -233,6 +233,42 @@ TEST(Serialization, WindowChanged)
     ASSERT_EQ(result.windowName, raw.windowName);
 }
 
+TEST(Serialization, RunShell)
+{
+    proto::RunShell rsh;
+    rsh.cmd = "ls -la";
+
+    Buffer buf;
+    rsh.serialize(buf);
+    ASSERT_EQ(buf.size(), Serializable::HeaderSize + proto::RunShell::SerializedSize + rsh.cmd.size());
+    buf.erase(buf.begin(), buf.begin() + Serializable::MetaDataSize);
+
+    ASSERT_EQ(_handler.identifyMessage(buf), proto::MessageType::RunShell);
+
+    proto::RunShell result;
+    result << buf;
+    ASSERT_EQ(result.cmd, rsh.cmd);
+}
+
+TEST(Serialization, RRunShell)
+{
+    proto::RRunShell rrsh;
+    rrsh.target.get();
+    rrsh.cmd = "ls -la";
+
+    Buffer buf;
+    rrsh.serialize(buf);
+    ASSERT_EQ(buf.size(), Serializable::HeaderSize + proto::RRunShell::SerializedSize + rrsh.cmd.size());
+    buf.erase(buf.begin(), buf.begin() + Serializable::MetaDataSize);
+
+    ASSERT_EQ(_handler.identifyMessage(buf), proto::MessageType::RRunShell);
+
+    proto::RRunShell result;
+    result << buf;
+    ASSERT_EQ(result.target, rrsh.target);
+    ASSERT_EQ(result.cmd, rrsh.cmd);
+}
+
 TEST(Serialization, Empty)
 {
     Buffer empty;
