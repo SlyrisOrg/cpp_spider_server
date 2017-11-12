@@ -302,6 +302,9 @@ TEST(ProtocolMessage, MessageIdentification)
 
     ASSERT_EQ(cmdHandler.identifyMessage(buf), proto::MessageType::Unknown);
 
-    buf = cmdHandler.makeHeader(proto::MessageType::Hello);
+    proto::Hello ehlo;
+    buf.clear();
+    ehlo >> buf;
+    buf.erase(buf.begin(), buf.begin() + 4);
     ASSERT_EQ(cmdHandler.identifyMessage(buf), proto::MessageType::Hello);
 }
