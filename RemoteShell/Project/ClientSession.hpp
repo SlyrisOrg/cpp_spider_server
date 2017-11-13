@@ -291,7 +291,7 @@ namespace sh
 
     private:
         bool _running{false};
-        logging::Logger _log{"remote-shell", logging::Level::Info};
+        logging::Logger _log{"remote-shell", logging::Info};
         spi::net::SSLContext &_ctx;
         spi::net::IOManager &_mgr;
         spi::net::PosixStream _interractive{_mgr, ::dup(STDIN_FILENO)};

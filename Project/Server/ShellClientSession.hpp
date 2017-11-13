@@ -63,18 +63,18 @@ namespace spi
             ErrorCode ec;
             proto::ReplyCode repCode;
 
-            _log(logging::Level::Debug) << m.stringify() << std::endl;
+            _log(logging::Debug) << m.stringify() << std::endl;
 
             auto client = __findClient(m.addr);
             if (client) {
                 MessageT toSend;
 
-                _log(logging::Level::Debug) << "Transmitting request to client "
+                _log(logging::Debug) << "Transmitting request to client "
                                             << client->getID().toString() << std::endl;
                 client->sendCommand(toSend, ec);
                 repCode.code = !ec ? proto::ReplyType::OK : proto::ReplyType::KO;
             } else {
-                _log(logging::Level::Warning) << "Ignoring request: unknown client " << m.addr.toString() << std::endl;
+                _log(logging::Warning) << "Ignoring request: unknown client " << m.addr.toString() << std::endl;
                 repCode.code = proto::ReplyType::KO;
             }
 
@@ -163,7 +163,7 @@ namespace spi
                                       boost::protect(boost::bind(&ShellClientSession::__handleRedirCmdData, this,
                                                                  net::ErrorPlaceholder)));
             } else {
-                _log(logging::Level::Warning) << "Unable to read command header from client : "
+                _log(logging::Warning) << "Unable to read command header from client : "
                                               << ec.message() << std::endl;
                 __replyError();
             }
@@ -172,7 +172,7 @@ namespace spi
         void __handleRedirCmdData(const ErrorCode &ec)
         {
             if (ec) {
-                _log(logging::Level::Warning) << "Unable to read command data from client" << ec.message() << std::endl;
+                _log(logging::Warning) << "Unable to read command data from client" << ec.message() << std::endl;
                 __replyError();
                 return;
             }
@@ -186,11 +186,11 @@ namespace spi
                 ErrorCode sec;
                 _conn.writeSome(sendBuf, sec);
                 if (sec) {
-                    _log(logging::Level::Warning) << "Unable to transmit data to the remote shell" << std::endl;
+                    _log(logging::Warning) << "Unable to transmit data to the remote shell" << std::endl;
                     _errorCb(this);
                 }
             } else {
-                _log(logging::Level::Warning) << "Ignoring unrecognized command" << std::endl;
+                _log(logging::Warning) << "Ignoring unrecognized command" << std::endl;
                 __replyError();
             }
         }

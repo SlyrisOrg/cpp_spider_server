@@ -38,41 +38,41 @@ namespace spi
             } else {
                 _lib.load(name);
                 if (!_lib.isLoaded()) {
-                    _log(logging::Level::Error) << "Unable to load the log module" << std::endl;
+                    _log(logging::Error) << "Unable to load the log module" << std::endl;
                     return false;
                 }
                 try {
                     _logCtor = _lib.get<LogHandleConstructor>("create");
                 } catch (const lib::SymbolNotFound &e) {
-                    _log(logging::Level::Error) << "Unable to load a symbol from the log module" << std::endl;
+                    _log(logging::Error) << "Unable to load a symbol from the log module" << std::endl;
                     return false;
                 }
             }
-            _log(logging::Level::Info) << "Logging module loaded successfully" << std::endl;
+            _log(logging::Info) << "Logging module loaded successfully" << std::endl;
             return true;
         }
 
     public:
-        explicit Core(const Config &config) noexcept : _conf(config), _log("core", logging::Level::Debug)
+        explicit Core(const Config &config) noexcept : _conf(config), _log("core", logging::Debug)
         {
-            _log(logging::Level::Info) << "Configuring Spider Core" << std::endl;
-            _log(logging::Level::Info) << "Using port " << _conf.port << " for clients" << std::endl;
-            _log(logging::Level::Info) << "Using port " << _conf.shellPort << " for remote control" << std::endl;
-            _log(logging::Level::Info) << "Using SSL certificate " << _conf.certFile << std::endl;
-            _log(logging::Level::Info) << "Using SSL private key " << _conf.keyFile << std::endl;
-            _log(logging::Level::Info) << "Using '" << _conf.logRoot << "' to store logs" << std::endl;
-            _log(logging::Level::Info) << "Using '" << config.logModule << "' module as loghandle" << std::endl;
+            _log(logging::Info) << "Configuring Spider Core" << std::endl;
+            _log(logging::Info) << "Using port " << _conf.port << " for clients" << std::endl;
+            _log(logging::Info) << "Using port " << _conf.shellPort << " for remote control" << std::endl;
+            _log(logging::Info) << "Using SSL certificate " << _conf.certFile << std::endl;
+            _log(logging::Info) << "Using SSL private key " << _conf.keyFile << std::endl;
+            _log(logging::Info) << "Using '" << _conf.logRoot << "' to store logs" << std::endl;
+            _log(logging::Info) << "Using '" << config.logModule << "' module as loghandle" << std::endl;
         }
 
         bool start()
         {
-            _log(logging::Level::Debug) << "Starting now" << std::endl;
+            _log(logging::Debug) << "Starting now" << std::endl;
 
             if (!__loadLogModule(_conf.logModule) || !_logMgr.setup(_conf.logRoot)
                 || !_server.setup(_conf.port, _conf.shellPort, _conf.certFile, _conf.keyFile, _conf.logRoot, _logCtor))
                 return false;
 
-            _log(logging::Level::Info) << "Core started successfully" << std::endl;
+            _log(logging::Info) << "Core started successfully" << std::endl;
             return _server.run();
         }
 

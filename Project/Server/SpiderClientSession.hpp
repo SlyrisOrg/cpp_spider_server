@@ -47,7 +47,7 @@ namespace spi
 
         void startSession() noexcept
         {
-            _log(logging::Level::Debug) << "Starting new session" << std::endl;
+            _log(logging::Debug) << "Starting new session" << std::endl;
             asyncHandshake(net::SSLConnection::HandshakeType::Server,
                            boost::bind(&SpiderClientSession::handleHandshake,
                                        shared_from_this_cast<SpiderClientSession>(), net::ErrorPlaceholder));
@@ -57,16 +57,16 @@ namespace spi
         void __logMessage(const ILoggable &l)
         {
             if (unlikely(!_identified)) {
-                _log(logging::Level::Warning) << "Rejecting log request from unidentified client" << std::endl;
+                _log(logging::Warning) << "Rejecting log request from unidentified client" << std::endl;
             } else {
-                _log(logging::Level::Debug) << l.stringify() << std::endl;
+                _log(logging::Debug) << l.stringify() << std::endl;
                 _logHandle->appendEntry(l);
             }
         }
 
         void __handleWindowChange(const ILoggable &wc)
         {
-            _log(logging::Level::Debug) << wc.stringify() << std::endl;
+            _log(logging::Debug) << wc.stringify() << std::endl;
             _logHandle->appendEntry(wc);
         }
 
@@ -74,8 +74,9 @@ namespace spi
         {
             const proto::Hello &hello = static_cast<const proto::Hello &>(l);
 
-            _log(logging::Level::Debug) << "Saying hello to " << hello.macAddress.toString() << std::endl;
-            _log(logging::Level::Debug) << "Using version " << hello.version << std::endl;
+            _log(logging::Debug) << "Saying hello to " << hello.macAddress.toString() << std::endl;
+            _log(logging::Debug) << "Using version " << hello.version << std::endl;
+            _log(logging::Debug) << "Using port " << hello.port << " for command connection" << std::endl;
             _logHandle->setID(hello.macAddress.toString());
             _logHandle->setup();
             _id.setRaw(hello.macAddress.raw());
@@ -93,9 +94,9 @@ namespace spi
         {
             if (!ec) {
                 _hasCommandConn = true;
-                _log(logging::Level::Debug) << "Successfully obtained a command channel with client" << std::endl;
+                _log(logging::Debug) << "Successfully obtained a command channel with client" << std::endl;
             } else {
-                _log(logging::Level::Warning) << "Unable to obtain a command channel with client"
+                _log(logging::Warning) << "Unable to obtain a command channel with client"
                                               << ec.message() << std::endl;
             }
         }
@@ -108,7 +109,7 @@ namespace spi
                                                         shared_from_this_cast<SpiderClientSession>(),
                                                         net::ErrorPlaceholder));
             } else {
-                _log(logging::Level::Warning) << "Unable to obtain a command channel with client: "
+                _log(logging::Warning) << "Unable to obtain a command channel with client: "
                                               << ec.message() << std::endl;
             }
         }
@@ -121,7 +122,7 @@ namespace spi
             l.serialize(buff);
             _commandConn.writeSome(buff, ec);
             if (ec) {
-                _log(logging::Level::Warning) << "Unable to send command to client: " << ec.message() << std::endl;
+                _log(logging::Warning) << "Unable to send command to client: " << ec.message() << std::endl;
             }
         }
 

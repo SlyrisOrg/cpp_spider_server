@@ -18,7 +18,7 @@ namespace spi
     {
     public:
         SyncCommandableSession(net::IOManager &io, net::SSLContext &ctx, const std::string &name) :
-            _conn(io, ctx), _log(name, logging::Level::Debug)
+            _conn(io, ctx), _log(name, logging::Debug)
         {
         }
 
